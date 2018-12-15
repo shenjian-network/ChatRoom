@@ -1,4 +1,8 @@
-#include"ClientToSerevr.h"
+//Copyright 2018 Tongji
+//License:GPL
+//Author:zyc
+//This is packet client send to server.
+#include"client_to_serevr.h"
 packetHead C2S_LoginUser::getPacketType()
 {
     return myHead;
