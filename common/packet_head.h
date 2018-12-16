@@ -19,7 +19,7 @@ public:
     /*其他均为主机序的自定义设置和获取*/
     unsigned short get_packet_type();
     unsigned short get_function_type();
-    unsigned short get_length();
+    unsigned short get_length()const;
     void get_string(char* s);
     void set_packet_type(const unsigned short& us);
     void set_function_type(const unsigned short& us);
