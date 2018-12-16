@@ -52,33 +52,52 @@ private:
     //PacketHead my_head;
     char user_name[33];
 };
+/*文本信息发送：文本基类*/
+class ServerToClientText:public ServerToClientBase
+{
+public:
+    ServerToClientText();
+    ServerToClientText(const PacketHead& ph,char*uname,char*ntime);
+    void get_string(char* s);
+    char* get_user_from_name();
+    char* get_now_time();
+    void set_string(const PacketHead& ph,const char* s);  
+private:
+    //PacketHead my_head;
+    char user_from_name[33];
+    char now_time[20];
+};
 /*文本信息发送：给一个用户发送文本消息*/
-class ServerToClientTextSimpleText:public ServerToClientBase
+class ServerToClientTextSimpleText:public ServerToClientText
 {
 public:
     ServerToClientTextSimpleText();
-    ServerToClientTextSimpleText(const PacketHead& ph,char*scontain);
+    ServerToClientTextSimpleText(const PacketHead& ph,char*uname,char*ntime,char*scontain);
     ~ServerToClientTextSimpleText();
     void get_string(char* s);
     char* get_simple_text_contain();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
+    //char user_from_name[33];
+    //char now_time[20];
     char* simple_text_contain;
+    int text_length;//该部分对于用户隐藏
 };
 /*文本信息发送：给一个用户发送文件信息*/
-class ServerToClientTextFileInfo:public ServerToClientBase
+class ServerToClientTextFileInfo:public ServerToClientText
 {
 public:
     ServerToClientTextFileInfo();
-    ServerToClientTextFileInfo(const PacketHead& ph,char*fname,unsigned int fkey);
-    virtual ~ServerToClientTextFileInfo(){}
+    ServerToClientTextFileInfo(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey);
     void get_string(char* s);
     char* get_file_name();
     unsigned int get_file_key();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
+    //char user_from_name[33];
+    //char now_time[20];
     char file_name[65];
     unsigned int file_key;
 };
@@ -87,16 +106,19 @@ class ServerToClientTextFileContain:public ServerToClientTextFileInfo
 {
 public:
     ServerToClientTextFileContain();
-    ServerToClientTextFileContain(const PacketHead& ph,char*fname,unsigned int fkey,char* fcontain);
+    ServerToClientTextFileContain(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey,char* fcontain);
     ~ServerToClientTextFileContain();
     void get_string(char* s);
     char* get_file_contain();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
+    //char user_from_name[33];
+    //char now_time[20];
     //char file_name[65];
     //unsigned int file_key;
     char* file_contain;
+    int file_length;//该部分对于用户隐藏
 };
 /*设置包：命令用户更改个性化设置*/
 class ServerToClientUserSetUpdate:public ServerToClientBase
