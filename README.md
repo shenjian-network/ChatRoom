@@ -270,18 +270,18 @@ __
 
 # 数据库
 
-## `用户信息表`
+## `user_info`
 
 系统只需要一个表
 
-|用户 | 密码 | 上次登录时间 |
-|------|-------|------|
-|zhongyuchen| xxxx | 2018.12.13 20:12 | 
-|zhaiyuchen| xxxx | 2018.12.12 14:22| 
-|liuyitao| xxxx | 2018.12.13 15:32| 
+|uname char(32) | pwd char(32) | last_login_time datetime | user_set mediumblob |
+|------|-------|------| ------ |
+|zhongyuchen| xxxx | 2018.12.13 20:12 | xxxx |
+|zhaiyuchen| xxxx | 2018.12.12 14:22| xxxx |
+|liuyitao| xxxx | 2018.12.13 15:32| xxxx |
 > 注：在用户从未登录的状态下，其上次登录时间设置为0000.00.00 00:00:00表示下次需要强制改密 
 
-## `收发消息表`
+## `interflow_info`
 
 系统为**每个用户**各自维护一个收发信息表，表名为`username_msgtable`,记录该用户发送/接受信息时的标识、时间、来源、信息类型和内容标识，并保留适当的索引，需要时可查找每次传输的内容。
 
@@ -291,7 +291,7 @@ __
 
 e.g.
 
-|标识|时间 | 来源用户 | 内容标识  | 类型 |
+|inter_id int unsigned| send_time datetime| from_user char(32)| cid  int unsigned| type char(20)|
 |------|------|-------|------|------|
 | 1 |2018.12.1 20:12 | zhongyuchen | 0 | msg|
 | 2 |2018.12.13 20:13| zhaiyuchen| 0  |img|
@@ -303,19 +303,19 @@ e.g.
 
 </br>
 
-## `文本消息表`和`文件信息表`
+## `text_contain`和`file_contain`
 
 系统为**所有用户**共同维护一个文本信息表和一个文件信息表，记录所有用户传输的所有文本和文件的具体内容，所有文本内容由msg标识唯一确定，所有文件信息由文件标识唯一确定
 
-| msg标识 | 文本内容 | 
+| mid int unsigned| mcontain mediumtext| 
 | ------ | ------ |
-| 0 | hello,world! |
+| 1 | hello,world! |
 
 </br>
 
-| 文件标识 | 文件大小 | 文件名 | 文件内容 |
+| fid int unsigned| fsize int| fname char(64) | fcontain mediumblob |
 |------|------|------|------|
-| 0 | 1456 | test.jpg | 00010100101001010... |
-| 1 | 123213 | test.txt | hello,world! |
+| 1 | 1456 | test.jpg | 00010100101001010... |
+| 2 | 123213 | test.txt | hello,world! |
 
 >注：数据库大小写区分，且client和server统一使用utf8编码
