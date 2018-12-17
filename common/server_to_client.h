@@ -12,12 +12,13 @@ class ServerToClientBase{
 public: 
     ServerToClientBase();
     ServerToClientBase(const PacketHead& ph);
+    virtual ~ServerToClientBase(){}
     /*set_string可以将网络序的规范字符串转为该类（主机序）内部存储形式*/
     /*get_string可以将该类内部存储（主机序）改为网络序的规范字符串*/
     /*其他均为主机序的自定义设置和获取*/
-    void get_string(char* s);
+    virtual void get_string(char* s);
     PacketHead get_packet_head();
-    void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
+    virtual void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
 private:
     PacketHead my_head; //报头共8字节
 };
@@ -45,6 +46,7 @@ class ServerToClientInform:public ServerToClientBase
 public:
     ServerToClientInform();
     ServerToClientInform(const PacketHead& ph,char*uname);
+    ~ServerToClientInform(){}
     void get_string(char* s);
     char* get_user_name();
     void set_string(const PacketHead& ph,const char* s);  
@@ -58,6 +60,7 @@ class ServerToClientText:public ServerToClientBase
 public:
     ServerToClientText();
     ServerToClientText(const PacketHead& ph,char*uname,char*ntime);
+    ~ServerToClientText(){}
     void get_string(char* s);
     char* get_user_from_name();
     char* get_now_time();
@@ -90,6 +93,7 @@ class ServerToClientTextFileInfo:public ServerToClientText
 public:
     ServerToClientTextFileInfo();
     ServerToClientTextFileInfo(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey);
+    ~ServerToClientTextFileInfo(){}
     void get_string(char* s);
     char* get_file_name();
     unsigned int get_file_key();

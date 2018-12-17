@@ -22,7 +22,10 @@ void ServerToClientBase::set_string(const PacketHead& ph,const char* s)
     my_head=ph;
 }
 /*ServerToClientReportSuccess*/
-ServerToClientReportSuccess::ServerToClientReportSuccess():ServerToClientBase(){}
+ServerToClientReportSuccess::ServerToClientReportSuccess():ServerToClientBase()
+{
+    user_status=NULL;
+}
 ServerToClientReportSuccess::ServerToClientReportSuccess(const PacketHead& ph,char*ltime,int unum,char**ustatus):ServerToClientBase(ph)
 {
     memcpy(last_login_time,ltime,19);
@@ -65,6 +68,13 @@ char** ServerToClientReportSuccess::get_user_status()
 }
 void ServerToClientReportSuccess::set_string(const PacketHead& ph,const char* s)
 {
+    if(user_status!=NULL)
+    {
+        for(int i=0;i<user_num;i++){
+            delete[] user_status[i];
+        }
+        delete[] user_status;
+    }
     ServerToClientBase::set_string(ph,s);
     memcpy(last_login_time,s,19);
     last_login_time[19]=0;
@@ -129,7 +139,10 @@ void ServerToClientText::set_string(const PacketHead& ph,const char* s)
     now_time[19]=0;
 }  
 /*ServerToClientTextSimpleText*/
-ServerToClientTextSimpleText::ServerToClientTextSimpleText():ServerToClientText(){}
+ServerToClientTextSimpleText::ServerToClientTextSimpleText():ServerToClientText()
+{
+    simple_text_contain=NULL;
+}
 ServerToClientTextSimpleText::ServerToClientTextSimpleText(const PacketHead& ph,char*uname,char*ntime,char*scontain):ServerToClientText(ph,uname,ntime)
 {
     text_length=ph.get_length()-32-19;
@@ -152,6 +165,8 @@ char* ServerToClientTextSimpleText::get_simple_text_contain()
 }
 void ServerToClientTextSimpleText::set_string(const PacketHead& ph,const char* s)
 {
+    if(simple_text_contain!=NULL)
+        delete[] simple_text_contain;
     ServerToClientText::set_string(ph,s);
     text_length=ph.get_length()-32-19;
     simple_text_contain=new char[text_length+1];
@@ -189,7 +204,10 @@ void ServerToClientTextFileInfo::set_string(const PacketHead& ph,const char* s)
     file_key=ntohs((*((unsigned int*)(s+19+32+64)))); 
 } 
 /*ServerToClientTextFileContain*/
-ServerToClientTextFileContain::ServerToClientTextFileContain():ServerToClientTextFileInfo(){}
+ServerToClientTextFileContain::ServerToClientTextFileContain():ServerToClientTextFileInfo()
+{
+    file_contain=NULL;
+}
 ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey,char* fcontain):
                                 ServerToClientTextFileInfo(ph,uname,ntime,fname,fkey)
 {
@@ -201,6 +219,7 @@ ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& p
 ServerToClientTextFileContain::~ServerToClientTextFileContain()
 {
     delete[] file_contain;
+    printf("delete ok\n");
 }
 void ServerToClientTextFileContain::get_string(char* s)
 {
@@ -213,13 +232,18 @@ char* ServerToClientTextFileContain::get_file_contain()
 }
 void ServerToClientTextFileContain::set_string(const PacketHead& ph,const char* s)
 {
+    if(file_contain!=NULL)
+        delete[] file_contain;
     file_length=ph.get_length()-32-19-64-4;
     ServerToClientTextFileInfo::set_string(ph,s);
     memcpy(file_contain,s+32+19+64+4,file_length);
     file_contain[file_length]=0;
 }  
 /*ServerToClientUserSetUpdate*/
-ServerToClientUserSetUpdate::ServerToClientUserSetUpdate():ServerToClientBase(){}
+ServerToClientUserSetUpdate::ServerToClientUserSetUpdate():ServerToClientBase()
+{
+    user_set_data=NULL;
+}
 ServerToClientUserSetUpdate::ServerToClientUserSetUpdate(const PacketHead& ph,char*sc):ServerToClientBase(ph)
 {
     int ulength=ph.get_length();
@@ -242,6 +266,8 @@ char* ServerToClientUserSetUpdate::get_user_set_data()
 }
 void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
 {
+    if(user_set_data!=NULL)
+        delete[] user_set_data;
     ServerToClientBase::set_string(ph,s);
     int ulength=ph.get_length();
     user_set_data=new char[ulength+1];
@@ -249,7 +275,12 @@ void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
     user_set_data[ulength]=0;   
 } 
 //TODO
-int main()
-{
-    printf("test\n");
-}
+// int main()
+// {     //for test
+//      printf("test:\n");
+//      PacketHead ph;
+//      ph.set_length(32+19+4+4+64);
+//      ServerToClientBase* cb=new ServerToClientTextFileContain(ph,n,t,f,fkey,fcontain);
+//      delete cb;
+//      return 1;
+// }

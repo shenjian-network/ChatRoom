@@ -12,12 +12,13 @@ class ClientToServerBase{
 public: 
     ClientToServerBase();
     ClientToServerBase(const PacketHead& ph);
+    virtual ~ClientToServerBase(){}
     /*set_string可以将网络序的规范字符串转为该类（主机序）内部存储形式*/
     /*get_string可以将该类内部存储（主机序）改为网络序的规范字符串*/
     /*其他均为主机序的自定义设置和获取*/
-    void get_string(char* s);
+    virtual void get_string(char* s);
     PacketHead get_packet_head();
-    void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
+    virtual void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
 private:
     PacketHead my_head; //报头共8字节
 };
@@ -27,6 +28,7 @@ class ClientToServerReportLogin:public ClientToServerBase
 public:
     ClientToServerReportLogin();
     ClientToServerReportLogin(const PacketHead& ph,const char* uname,const char* upwd);
+    ~ClientToServerReportLogin(){}
     void get_string(char* s);
     char* get_user_name();
     char* get_user_pwd();
@@ -42,6 +44,7 @@ class ClientToServerReportUpdate:public ClientToServerBase
 public:
     ClientToServerReportUpdate();
     ClientToServerReportUpdate(const PacketHead& ph,const char* uname,const char* last_upwd,const char* now_upwd);
+    virtual ~ClientToServerReportUpdate(){}
     void get_string(char* s);
     char* get_user_name();
     char* get_last_user_pwd();
@@ -59,7 +62,7 @@ class ClientToServerTextToUsers:public ClientToServerBase
 public:
     ClientToServerTextToUsers();
     ClientToServerTextToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo);
-    ~ClientToServerTextToUsers();
+    virtual ~ClientToServerTextToUsers();
     void get_string(char* s);
     unsigned int get_user_num();
     char** get_user_info();
@@ -78,7 +81,7 @@ class ClientToServerTextFileToUsers:public ClientToServerBase
 public:
     ClientToServerTextFileToUsers();
     ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo,const char* fname);
-    ~ClientToServerTextFileToUsers();
+    virtual ~ClientToServerTextFileToUsers();
     void get_string(char* s);
     char* get_file_name();
     void set_string(const PacketHead& ph,const char* s);  
@@ -96,6 +99,7 @@ class ClientToServerTextAskForFile:public ClientToServerBase
 public:
     ClientToServerTextAskForFile();
     ClientToServerTextAskForFile(const PacketHead& ph,const int& fkey);
+    virtual ~ClientToServerTextAskForFile(){}
     void get_string(char* s);
     unsigned int get_file_key();
     void set_string(const PacketHead& ph,const char* s);  
@@ -109,6 +113,7 @@ class ClientToServerTextAskForTexts:public ClientToServerBase
 public:
     ClientToServerTextAskForTexts();
     ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum);
+    virtual ~ClientToServerTextAskForTexts(){}
     void get_string(char* s);
     unsigned int get_list_num();
     void set_string(const PacketHead& ph,const char* s);  
@@ -122,7 +127,7 @@ class ClientToServerUserSetUpdate:public ClientToServerBase
 public:
     ClientToServerUserSetUpdate();
     ClientToServerUserSetUpdate(const PacketHead& ph,const char* sc);
-    ~ClientToServerUserSetUpdate();
+    virtual ~ClientToServerUserSetUpdate();
     void get_string(char* s);
     char* get_user_set_data();
     void set_string(const PacketHead& ph,const char* s);  
