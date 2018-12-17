@@ -14,7 +14,7 @@ TcpClient::~TcpClient()
 }
 
 
-void TcpClient::ConnectToHost(){
+bool TcpClient::ConnectToHost(){
     socket = new QTcpSocket(this);
 
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
@@ -24,7 +24,10 @@ void TcpClient::ConnectToHost(){
 
     if(!socket->waitForConnected(5000)){
         qDebug() << "Error: " << socket->errorString();
+        return false;
     }
+
+    return true;
 }
 
 

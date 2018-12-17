@@ -16,19 +16,46 @@ public:
     explicit TcpClient(QWidget *parent = nullptr);
     ~TcpClient();
 
-    void ConnectToHost();
+    bool ConnectToHost();
 
-    // TODO: it has an argument
-    void Write();
+    void loginGUI();
+
+    // msg box,
+    void errorGUI();
+
+    void chatRoomGUI();
+
+    void changePwdGUI();
+
+
+    // two conditions... if it is myself, yor'are out; if it is other, modify GUI
+    void offline();
+
+    // only one condition
+    void online();
+
+    void cls();
+
+    void showText();
 
 private slots:
     // Signal func to handle read event
+    //
     void readyRead();
 
     // Signal func to handle disconnection with Server
     void disconnected();
 
+    // login func
+    // send a packet containing and wait
+    // get_string write
+
 private:
+
+
+
+
+
     QTcpSocket *socket;
     Ui::TcpClient *ui;
 };
