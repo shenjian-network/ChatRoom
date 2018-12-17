@@ -79,6 +79,7 @@ public:
     ~ServerToClientTextSimpleText();
     void get_string(char* s);
     char* get_simple_text_contain();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
@@ -114,7 +115,9 @@ public:
     ~ServerToClientTextFileContain();
     void get_string(char* s);
     char* get_file_contain();
-    void set_string(const PacketHead& ph,const char* s);  
+    int get_text_length();
+    void set_string(const PacketHead& ph,const char* s); 
+
 private:
     //PacketHead my_head;
     //char user_from_name[33];
@@ -122,7 +125,7 @@ private:
     //char file_name[65];
     //unsigned int file_key;
     char* file_contain;
-    int file_length;//该部分对于用户隐藏
+    int text_length;//
 };
 /*设置包：命令用户更改个性化设置*/
 class ServerToClientUserSetUpdate:public ServerToClientBase
@@ -133,6 +136,7 @@ public:
     ~ServerToClientUserSetUpdate();
     void get_string(char* s);
     char* get_user_set_data();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;

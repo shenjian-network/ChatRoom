@@ -67,13 +67,14 @@ public:
     unsigned int get_user_num();
     char** get_user_info();
     char* get_text_info();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //packetHead myHead;
     unsigned int user_num;//该部分决定申请空间的大小
     char** user_info;//该部分为二维数组,形式为user_info[user_num][33]
     char* text_info;//该部分大小取决于packet中的length
-    int text_length;//该部分不会get得到，属于不可见部分
+    int text_length;//文本的长度
 };
 /*文本信息的发送：给一个或多个发文件信息*/
 class ClientToServerTextFileToUsers:public ClientToServerBase
@@ -84,6 +85,10 @@ public:
     virtual ~ClientToServerTextFileToUsers();
     void get_string(char* s);
     char* get_file_name();
+    unsigned int get_user_num();
+    char** get_user_info();
+    char* get_text_info();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //packetHead myHead;
@@ -130,6 +135,7 @@ public:
     virtual ~ClientToServerUserSetUpdate();
     void get_string(char* s);
     char* get_user_set_data();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //packetHead myHead;

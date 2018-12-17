@@ -165,6 +165,10 @@ void ClientToServerTextToUsers::set_string(const PacketHead& ph,const char* s)
     memcpy( text_info,s+4+32*user_num,text_length);
     text_info[text_length]=0;        
 }  
+int ClientToServerTextToUsers::get_text_length()
+{
+    return text_length;
+}
 /*ClientToServerTextFileToUsers*/
 ClientToServerTextFileToUsers::ClientToServerTextFileToUsers():ClientToServerBase()
 {
@@ -206,9 +210,25 @@ void ClientToServerTextFileToUsers::get_string(char* s)
     memcpy(s+12+user_num*32,file_name,64);
     memcpy(s+12+user_num*32+64,text_info,text_length);    
 }
+unsigned int ClientToServerTextFileToUsers::get_user_num()
+{
+    return user_num;
+}
+char** ClientToServerTextFileToUsers::get_user_info()
+{
+    return user_info;
+}
+char* ClientToServerTextFileToUsers::get_text_info()
+{
+    return text_info;
+}
 char* ClientToServerTextFileToUsers::get_file_name()
 {
     return file_name;
+}
+int ClientToServerTextFileToUsers::get_text_length()
+{
+    return text_length;
 }
 void ClientToServerTextFileToUsers::set_string(const PacketHead& ph,const char* s)
 {
@@ -300,6 +320,10 @@ void ClientToServerUserSetUpdate::get_string(char* s)
 char* ClientToServerUserSetUpdate::get_user_set_data()
 {
     return user_set_data;
+}
+int ClientToServerUserSetUpdate::get_text_length()
+{
+    return get_packet_head().get_length();
 }
 void ClientToServerUserSetUpdate::set_string(const PacketHead& ph,const char* s)
 {

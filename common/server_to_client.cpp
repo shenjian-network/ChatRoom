@@ -163,6 +163,10 @@ char* ServerToClientTextSimpleText::get_simple_text_contain()
 {
     return simple_text_contain;
 }
+int ServerToClientTextSimpleText::get_text_length()
+{
+    return text_length;
+}
 void ServerToClientTextSimpleText::set_string(const PacketHead& ph,const char* s)
 {
     if(simple_text_contain!=NULL)
@@ -211,10 +215,10 @@ ServerToClientTextFileContain::ServerToClientTextFileContain():ServerToClientTex
 ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey,char* fcontain):
                                 ServerToClientTextFileInfo(ph,uname,ntime,fname,fkey)
 {
-    file_length=ph.get_length()-32-19-64-4;
-    file_contain=new char[file_length+1];
-    memcpy(file_contain,fcontain,file_length);
-    file_contain[file_length]=0;
+    text_length=ph.get_length()-32-19-64-4;
+    file_contain=new char[text_length+1];
+    memcpy(file_contain,fcontain,text_length);
+    file_contain[text_length]=0;
 }
 ServerToClientTextFileContain::~ServerToClientTextFileContain()
 {
@@ -224,20 +228,24 @@ ServerToClientTextFileContain::~ServerToClientTextFileContain()
 void ServerToClientTextFileContain::get_string(char* s)
 {
     ServerToClientTextFileInfo::get_string(s);
-    memcpy(s+8+32+19+64+4,file_contain,file_length);
+    memcpy(s+8+32+19+64+4,file_contain,text_length);
 }
 char* ServerToClientTextFileContain::get_file_contain()
 {
     return file_contain;
 }
+int ServerToClientTextFileContain::get_text_length()
+{
+    return text_length;
+}
 void ServerToClientTextFileContain::set_string(const PacketHead& ph,const char* s)
 {
     if(file_contain!=NULL)
         delete[] file_contain;
-    file_length=ph.get_length()-32-19-64-4;
+    text_length=ph.get_length()-32-19-64-4;
     ServerToClientTextFileInfo::set_string(ph,s);
-    memcpy(file_contain,s+32+19+64+4,file_length);
-    file_contain[file_length]=0;
+    memcpy(file_contain,s+32+19+64+4,text_length);
+    file_contain[text_length]=0;
 }  
 /*ServerToClientUserSetUpdate*/
 ServerToClientUserSetUpdate::ServerToClientUserSetUpdate():ServerToClientBase()
@@ -263,6 +271,10 @@ void ServerToClientUserSetUpdate::get_string(char* s)
 char* ServerToClientUserSetUpdate::get_user_set_data()
 {
     return user_set_data;
+}
+int ServerToClientUserSetUpdate::get_text_length()
+{
+    return get_packet_head().get_length();
 }
 void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
 {
