@@ -18,7 +18,7 @@ unsigned short PacketHead::get_function_type()
 {
     return function_type;
 }
-unsigned short PacketHead::get_length() const
+unsigned int PacketHead::get_length() const
 {
     return length;
 }
