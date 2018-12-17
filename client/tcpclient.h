@@ -27,6 +27,7 @@ public:
 
     void changePwdGUI();
 
+    void configGUI();
 
     // two conditions... if it is myself, yor'are out; if it is other, modify GUI
     void offline();
@@ -37,6 +38,9 @@ public:
     void cls();
 
     void showText();
+
+    // read config
+    void setConfig();
 
 private slots:
     // Signal func to handle read event
