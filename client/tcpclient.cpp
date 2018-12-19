@@ -23,6 +23,12 @@ TcpClient::TcpClient(QWidget *parent) :
     ui(new Ui::TcpClient)
 {
     ui->setupUi(this);
+
+    loginWindow = nullptr;
+    chatRoomWindow = nullptr;
+    changePwdWindow = nullptr;
+    userList = nullptr;
+
     QTimer *timer=new QTimer(this);
     timer->start(1000); // 每次发射timeout信号时间间隔为1秒
     connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()));
@@ -127,7 +133,6 @@ void TcpClient::loginGUI(){
 
     loginWindow->setLayout(mainLayout);
     loginWindow->resize(500, 300);
-
      loginWindow->setAutoFillBackground(true); // 这句要加上, 否则可能显示不出背景图.
      QPalette palette;
      qDebug() << QDir::currentPath()+ "/image/background.jpg";
@@ -538,7 +543,7 @@ void TcpClient::on_sendBtn_clicked(){
     QString text =  line->toPlainText();
     line->clear();  //清空输入栏的内容
 
-    item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(0);
+    item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
     line = static_cast<QTextBrowser*>(item->widget());
     line->append(text);  // 本地先显示自己刚刚发送的内容
 
@@ -664,12 +669,14 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
 
  // 更新时间
 void TcpClient::timeUpdate(){
-    QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();
-    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
-    item = static_cast<QVBoxLayout*>(item)->itemAt(1);
-    item = static_cast<QHBoxLayout*>(item)->itemAt(1);
-    QLineEdit* line = static_cast<QLineEdit*>(item->widget());
-    line->setText(QString::number(time.elapsed() / 1000));
+    if(chatRoomWindow){
+        QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();
+        QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
+        item = static_cast<QVBoxLayout*>(item)->itemAt(1);
+        item = static_cast<QHBoxLayout*>(item)->itemAt(1);
+        QLineEdit* line = static_cast<QLineEdit*>(item->widget());
+        line->setText(QString::number(time.elapsed() / 1000));
+    }
 }
 
 // 接受到包的处理，状态机 （FINISHED)
