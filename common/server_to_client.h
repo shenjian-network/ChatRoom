@@ -12,12 +12,13 @@ class ServerToClientBase{
 public: 
     ServerToClientBase();
     ServerToClientBase(const PacketHead& ph);
+    virtual ~ServerToClientBase(){}
     /*set_string可以将网络序的规范字符串转为该类（主机序）内部存储形式*/
     /*get_string可以将该类内部存储（主机序）改为网络序的规范字符串*/
     /*其他均为主机序的自定义设置和获取*/
-    void get_string(char* s);
+    virtual void get_string(char* s);
     PacketHead get_packet_head();
-    void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
+    virtual void set_string(const PacketHead& ph,const char* s);//包含自身的报头，和后面收到的length的字符串
 private:
     PacketHead my_head; //报头共8字节
 };
@@ -45,6 +46,7 @@ class ServerToClientInform:public ServerToClientBase
 public:
     ServerToClientInform();
     ServerToClientInform(const PacketHead& ph,char*uname);
+    ~ServerToClientInform(){}
     void get_string(char* s);
     char* get_user_name();
     void set_string(const PacketHead& ph,const char* s);  
@@ -58,6 +60,7 @@ class ServerToClientText:public ServerToClientBase
 public:
     ServerToClientText();
     ServerToClientText(const PacketHead& ph,char*uname,char*ntime);
+    ~ServerToClientText(){}
     void get_string(char* s);
     char* get_user_from_name();
     char* get_now_time();
@@ -76,6 +79,7 @@ public:
     ~ServerToClientTextSimpleText();
     void get_string(char* s);
     char* get_simple_text_contain();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
@@ -90,6 +94,7 @@ class ServerToClientTextFileInfo:public ServerToClientText
 public:
     ServerToClientTextFileInfo();
     ServerToClientTextFileInfo(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey);
+    ~ServerToClientTextFileInfo(){}
     void get_string(char* s);
     char* get_file_name();
     unsigned int get_file_key();
@@ -110,7 +115,9 @@ public:
     ~ServerToClientTextFileContain();
     void get_string(char* s);
     char* get_file_contain();
-    void set_string(const PacketHead& ph,const char* s);  
+    int get_text_length();
+    void set_string(const PacketHead& ph,const char* s); 
+
 private:
     //PacketHead my_head;
     //char user_from_name[33];
@@ -118,7 +125,7 @@ private:
     //char file_name[65];
     //unsigned int file_key;
     char* file_contain;
-    int file_length;//该部分对于用户隐藏
+    int text_length;//
 };
 /*设置包：命令用户更改个性化设置*/
 class ServerToClientUserSetUpdate:public ServerToClientBase
@@ -129,6 +136,7 @@ public:
     ~ServerToClientUserSetUpdate();
     void get_string(char* s);
     char* get_user_set_data();
+    int get_text_length();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;

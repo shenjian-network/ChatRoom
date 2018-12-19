@@ -93,7 +93,11 @@ void ClientToServerReportUpdate::set_string(const PacketHead& ph,const char* s)
     now_user_pwd[32]=0;
 }  
 /*ClientToServerTextToUsers*/
-ClientToServerTextToUsers::ClientToServerTextToUsers():ClientToServerBase(){}
+ClientToServerTextToUsers::ClientToServerTextToUsers():ClientToServerBase()
+{
+    user_info=NULL;
+    text_info=NULL;
+}
 ClientToServerTextToUsers::ClientToServerTextToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo):ClientToServerBase(ph)
 {
     text_length=ph.get_length()-unum*32-4;
@@ -140,6 +144,14 @@ char* ClientToServerTextToUsers::get_text_info()
 }
 void ClientToServerTextToUsers::set_string(const PacketHead& ph,const char* s)
 {
+    if(user_info!=NULL){
+        for(int i=0;i<user_num;i++){
+            delete[] user_info[i];
+        }
+        delete[] user_info;
+    }
+    if(text_info!=NULL)
+        delete[] text_info;
     ClientToServerBase::set_string(ph,s);
     user_num=ntohs((*((unsigned int*)s))); 
     text_length=ph.get_length()-user_num*32-4;
@@ -153,8 +165,16 @@ void ClientToServerTextToUsers::set_string(const PacketHead& ph,const char* s)
     memcpy( text_info,s+4+32*user_num,text_length);
     text_info[text_length]=0;        
 }  
+int ClientToServerTextToUsers::get_text_length()
+{
+    return text_length;
+}
 /*ClientToServerTextFileToUsers*/
-ClientToServerTextFileToUsers::ClientToServerTextFileToUsers():ClientToServerBase(){}
+ClientToServerTextFileToUsers::ClientToServerTextFileToUsers():ClientToServerBase()
+{
+    user_info=NULL;
+    text_info=NULL;
+}
 ClientToServerTextFileToUsers::ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo,const char* fname):ClientToServerBase(ph)
 {
     text_length=ph.get_length()-unum*32-4-64;
@@ -190,12 +210,36 @@ void ClientToServerTextFileToUsers::get_string(char* s)
     memcpy(s+12+user_num*32,file_name,64);
     memcpy(s+12+user_num*32+64,text_info,text_length);    
 }
+unsigned int ClientToServerTextFileToUsers::get_user_num()
+{
+    return user_num;
+}
+char** ClientToServerTextFileToUsers::get_user_info()
+{
+    return user_info;
+}
+char* ClientToServerTextFileToUsers::get_text_info()
+{
+    return text_info;
+}
 char* ClientToServerTextFileToUsers::get_file_name()
 {
     return file_name;
 }
+int ClientToServerTextFileToUsers::get_text_length()
+{
+    return text_length;
+}
 void ClientToServerTextFileToUsers::set_string(const PacketHead& ph,const char* s)
 {
+    if(user_info!=NULL){
+        for(int i=0;i<user_num;i++){
+            delete[] user_info[i];
+        }
+        delete[] user_info;
+    }
+    if(text_info!=NULL)
+        delete[] text_info;
     ClientToServerBase::set_string(ph,s);
     user_num=ntohs((*((unsigned int*)s))); 
     text_length=ph.get_length()-user_num*32-4-64;
@@ -254,7 +298,10 @@ void ClientToServerTextAskForTexts::set_string(const PacketHead& ph,const char* 
     list_num=ntohs((*((unsigned int*)s)));    
 } 
 /*ClientToServerUserSetUpdate*/
-ClientToServerUserSetUpdate::ClientToServerUserSetUpdate():ClientToServerBase(){}
+ClientToServerUserSetUpdate::ClientToServerUserSetUpdate():ClientToServerBase()
+{
+    user_set_data=NULL;
+}
 ClientToServerUserSetUpdate::ClientToServerUserSetUpdate(const PacketHead& ph,const char* sc):ClientToServerBase(ph)
 {
     user_set_data=new char[ph.get_length()+1];
@@ -274,16 +321,25 @@ char* ClientToServerUserSetUpdate::get_user_set_data()
 {
     return user_set_data;
 }
+int ClientToServerUserSetUpdate::get_text_length()
+{
+    return get_packet_head().get_length();
+}
 void ClientToServerUserSetUpdate::set_string(const PacketHead& ph,const char* s)
 {
+    if(user_set_data!=NULL)
+        delete[] user_set_data;
     ClientToServerBase::set_string(ph,s);
     user_set_data=new char[ph.get_length()+1];
     memcpy(user_set_data,s,ph.get_length()); 
     user_set_data[ph.get_length()]=0; 
 }  
 //TODO
-int main()
-{
-    //for test
-    printf("test\n");
-}
+// int main()
+// {     //for test
+//      printf("test:\n");
+//      PacketHead ph;
+//      ClientToServerBase* cb=new ClientToServerUserSetUpdate(ph,"123");
+//      delete cb;
+//      return 1;
+// }
