@@ -78,7 +78,7 @@ public:
 
     void selectNone();
 
-    void getCheckState();
+    void getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& vecName);
 
 private slots:
     // Signal func to handle read event

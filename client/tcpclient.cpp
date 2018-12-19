@@ -209,15 +209,16 @@ void TcpClient::chatRoomGUI(){
     subsublayout1->addWidget(curUserLabel);
     subsublayout1->addWidget(curUsername);
 
+
     QHBoxLayout * subsublayout2 = new QHBoxLayout;
-    QLabel * ipLabel = new QLabel("IP地址");
+    QLabel * ipLabel = new QLabel("     IP地址");
     QLineEdit * ipaddr = new QLineEdit(this->ip);
     ipaddr->setEnabled(false);
     subsublayout2->addWidget(ipLabel);
     subsublayout2->addWidget(ipaddr);
 
     QHBoxLayout * subsublayout3 = new QHBoxLayout;
-    QLabel * portLabel = new QLabel("端口号");
+    QLabel * portLabel = new QLabel("     端口号");
     QLineEdit * port = new QLineEdit(QString::number(this->port, 10));
     port->setEnabled(false);
     subsublayout3->addWidget(portLabel);
@@ -255,29 +256,47 @@ void TcpClient::chatRoomGUI(){
     QHBoxLayout * layout1 = new QHBoxLayout;
     QTextBrowser * textfield = new QTextBrowser;
     userList = new QListWidget;
-    textfield->setMaximumSize(500, 400);
-    textfield->setMinimumSize(500, 400);
+    textfield->setFixedSize(500, 400);
     textfield->setHtml("<h1>This is a test</h1>");
     textfield->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+
+    // 仅做测试
     insertListWidget("zhongyuchen");
-    userList->setMaximumSize(200, 400);
-    userList->setMinimumSize(200, 400);
+    insertListWidget("zhaiyuchen");
+    insertListWidget("liyitao");
+
+    userList->setFixedSize(160, 370);
+
+    QVBoxLayout * rightLayout = new QVBoxLayout;
+    QLabel * userListLabel = new QLabel("当前用户列表");
+    userListLabel->setAlignment(Qt::AlignHCenter);
+    userList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    rightLayout->addWidget(userListLabel);
+    rightLayout->addWidget(userList);
+
     layout1->addWidget(textfield);
-    layout1->addWidget(userList);
+    layout1->addLayout(rightLayout);
+
 
     QHBoxLayout * layout2 = new QHBoxLayout;
 //    layout2->setStackingMode(QStackedLayout::StackAll);
     QTextEdit * textedit = new QTextEdit;
-    textedit->setMaximumSize(678, 300);
-    textedit->setMinimumSize(678, 300);
+    textedit->setFixedSize(670, 180);
     textedit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     layout2->addWidget(textedit);
 
+
     QPushButton * send = new QPushButton("发送");
-    send->setMaximumSize(50, 20);
-    send->setMinimumSize(50, 20);
-    send->setGeometry(640, 670, 50, 20);
-    layout2->addWidget(send);
+    send->setFixedSize(75, 30);
+    send->setStyleSheet("QPushButton{background-color:rgb(0, 150, 255)}"
+                         "QPushButton:hover{background-color:rgb(0, 255, 255)}");
+
+    QVBoxLayout * subrightLayout = new QVBoxLayout;
+    subrightLayout->setContentsMargins(10,10,30,10);
+    subrightLayout->addStretch(8);
+    subrightLayout->addWidget(send);
+
+    layout2->addLayout(subrightLayout);
 
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(layout0);
@@ -288,7 +307,6 @@ void TcpClient::chatRoomGUI(){
     connect(send, SIGNAL(clicked()), this, SLOT(on_sendBtn_clicked()));
 
     chatRoomWindow->setLayout(mainLayout);
-    chatRoomWindow->resize(700, 700);
     chatRoomWindow->show();
 }
 
@@ -365,22 +383,24 @@ void TcpClient::selectNone(){
 }
 
 // 得到用户列表的用户选中的状态（TODO）
-void TcpClient::getCheckState(){
+void TcpClient::getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& vecName){
     int count = userList->count();
-    bool isChecked = true;
-    QVector<bool> vecIsChecked;
-    vecIsChecked.clear();
+    bool isChecked;
     QListWidgetItem * item;
     QWidget * widget;
     QCheckBox * box;
-    QString text;
+    QString name;
+
+    vecIsChecked.clear();
+    vecName.clear();
     for(int i = 0;i < count; ++i){
         item = userList->item(i);
         widget = userList->itemWidget(item);
         box = static_cast<QCheckBox*>(widget);
-        text = box->text();
         isChecked = box->isChecked();
         vecIsChecked.push_back(isChecked);
+        name = box->text();
+        vecName.push_back(name);
     }
 }
 
@@ -527,7 +547,7 @@ void TcpClient::on_signupBtn_clicked()
         (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
 
 
-    char* tmpStr = new char[sendPacketHead.get_length()];
+    char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
     // socket->write(tmpStr, 8 + sendPacketHead.get_length());
 
@@ -541,6 +561,11 @@ void TcpClient::on_sendBtn_clicked(){
     QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[2])->itemAt(0);
     QTextEdit* line = static_cast<QTextEdit*>(item->widget());
     QString text =  line->toPlainText();
+    if(text == ""){
+        // 空消息不必发送
+        errorGUI("消息不能为空");
+        return;
+    }
     line->clear();  //清空输入栏的内容
 
     item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
@@ -549,6 +574,27 @@ void TcpClient::on_sendBtn_clicked(){
 
     // TODO 向服务器发送消息
     // 需要：要发送的用户和消息内容
+
+    // 用户列表，如果是true代表打了勾，可以发送
+    QVector<QString> vecName;
+    QVector<bool> vecIsChecked;
+
+    getCheckState(vecIsChecked, vecName);
+
+    int length = vecName.length();
+    int flag = false;
+    for(int i = 0;i < length; ++i){
+        qDebug() << vecName[i] << ": " << vecIsChecked[i];
+        if(vecIsChecked[i])
+            flag = true;
+    }
+
+    // 如果全是false，即没有选中任何用户，报个错
+    if(!flag){
+        errorGUI("未选中任何用户");
+        return;
+    }
+
 
     qDebug() << "消息内容：" << text;
 }
@@ -566,8 +612,18 @@ void TcpClient::on_changePwdBtn_clicked(){
     changePwdWindow->setWindowTitle("修改密码");
     changePwdWindow->setFixedSize(QSize(500, 300));
 
+    QHBoxLayout * layout0 = new QHBoxLayout;
+    QLabel * usernameLabel = new QLabel("          用户名");
+    QLineEdit * user = new QLineEdit;
+    QRegExp rx("[^\u4e00-\u9fa5]+");
+    QRegExpValidator *pReg = new QRegExpValidator(rx, this);
+    user->setValidator(pReg);
+    layout0->addWidget(usernameLabel);
+    layout0->addWidget(user);
+    layout0->setContentsMargins(50, 10, 50, 10);
+
     QHBoxLayout * layout1 = new QHBoxLayout;
-    QLabel * originalPwdLabel = new QLabel("原始密码 ");
+    QLabel * originalPwdLabel = new QLabel("     原始密码");
     QLineEdit * originalPwd = new QLineEdit;
     originalPwd->setEchoMode(QLineEdit::Password);
     layout1->addWidget(originalPwdLabel);
@@ -575,7 +631,7 @@ void TcpClient::on_changePwdBtn_clicked(){
     layout1->setContentsMargins(50, 10, 50, 10);
 
     QHBoxLayout * layout2 = new QHBoxLayout;
-    QLabel * newPwdLabel = new QLabel("新密码   ");
+    QLabel * newPwdLabel = new QLabel("          新密码");
     QLineEdit * newPwd = new QLineEdit;
     newPwd->setEchoMode(QLineEdit::Password);
     layout2->addWidget(newPwdLabel);
@@ -601,6 +657,7 @@ void TcpClient::on_changePwdBtn_clicked(){
 
 
     QVBoxLayout * mainlayout = new QVBoxLayout;
+    mainlayout->addLayout(layout0);
     mainlayout->addLayout(layout1);
     mainlayout->addLayout(layout2);
     mainlayout->addLayout(layout3);
@@ -619,15 +676,24 @@ void TcpClient::on_changePwdAckBtn_clicked(){
     QVector<QObject*> layouts = changePwdWindow->layout()->children().toVector();
     QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
     QLineEdit* line = static_cast<QLineEdit*>(item->widget());
-    QString originalPwd = line->text();
+    QString user = line->text();
 
     item = static_cast<QHBoxLayout*>(layouts[1])->itemAt(1);
     line = static_cast<QLineEdit*>(item->widget());
-    QString newPwd = line->text();
+    QString originalPwd = line->text();
 
     item = static_cast<QHBoxLayout*>(layouts[2])->itemAt(1);
     line = static_cast<QLineEdit*>(item->widget());
+    QString newPwd = line->text();
+
+    item = static_cast<QHBoxLayout*>(layouts[3])->itemAt(1);
+    line = static_cast<QLineEdit*>(item->widget());
     QString ackNewPwd = line->text();
+
+    if(user == "" || originalPwd == "" || newPwd == ""){
+        errorGUI("用户名或密码不能为空");
+        return;
+    }
 
     if(newPwd != ackNewPwd){
         errorGUI("新密码不一致");
@@ -635,6 +701,10 @@ void TcpClient::on_changePwdAckBtn_clicked(){
     }
 
     // TODO 发送修改密码消息
+    qDebug() << "用户名" << user;
+    qDebug() << "原始密码" << originalPwd;
+    qDebug() << "新密码" << newPwd;
+    qDebug() << "确认新密码" << ackNewPwd;
 
     PacketHead sendPacketHead;
 
@@ -646,20 +716,14 @@ void TcpClient::on_changePwdAckBtn_clicked(){
     ClientToServerReportUpdate sendClientToServerReportUpdate;
 
     sendClientToServerReportUpdate.set_string(sendPacketHead,
-        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(originalPwd), 32) + 
-        stringPadding(QStringToString(newPwd))).c_str());
-    
+        (stringPadding(QStringToString(user), 32) + stringPadding(QStringToString(originalPwd), 32) +
+        stringPadding(QStringToString(newPwd), 32)).c_str());
+
     char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
     // socket->write(tmpStr, 8 + sendPacketHead.get_length());
 
     delete[] tmpStr;
-
-
-
-    qDebug() << "原始密码" << originalPwd;
-    qDebug() << "新密码" << newPwd;
-    qDebug() << "确认新密码" << ackNewPwd;
 
     changePwdWindow->close();
 }
