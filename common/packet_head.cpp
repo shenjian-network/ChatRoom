@@ -4,7 +4,7 @@
 //This is packet head.
 #include "packet_head.h"
 PacketHead::PacketHead():packet_type(0),function_type(0),length(0){}
-PacketHead::PacketHead(const unsigned short& p,const unsigned short& f,const unsigned int& l)
+PacketHead::PacketHead(const unsigned short p,const unsigned short f,const unsigned int l)
 {
     packet_type=p;
     function_type=f;
@@ -32,17 +32,17 @@ void PacketHead::get_string(char* s)
     memcpy(s+4, (char*)(&tmpi),4);
     return;
 }
-void PacketHead::set_packet_type(const unsigned short& p)
+void PacketHead::set_packet_type(const unsigned short p)
 {
     packet_type=p;
     return;
 }
-void PacketHead::set_function_type(const unsigned short& f)
+void PacketHead::set_function_type(const unsigned short f)
 {
     function_type=f;
     return;
 }
-void PacketHead::set_length(const unsigned int& l)
+void PacketHead::set_length(const unsigned int l)
 {
     length=l;
     return;

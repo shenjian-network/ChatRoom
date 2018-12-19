@@ -98,7 +98,7 @@ ClientToServerTextToUsers::ClientToServerTextToUsers():ClientToServerBase()
     user_info=NULL;
     text_info=NULL;
 }
-ClientToServerTextToUsers::ClientToServerTextToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo):ClientToServerBase(ph)
+ClientToServerTextToUsers::ClientToServerTextToUsers(const PacketHead& ph,const int& unum,char** uinfo,const char* cinfo):ClientToServerBase(ph)
 {
     text_length=ph.get_length()-unum*32-4;
     user_num=unum;
@@ -175,7 +175,7 @@ ClientToServerTextFileToUsers::ClientToServerTextFileToUsers():ClientToServerBas
     user_info=NULL;
     text_info=NULL;
 }
-ClientToServerTextFileToUsers::ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo,const char* fname):ClientToServerBase(ph)
+ClientToServerTextFileToUsers::ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,char** uinfo,const char* cinfo,const char* fname):ClientToServerBase(ph)
 {
     text_length=ph.get_length()-unum*32-4-64;
     user_num=unum;

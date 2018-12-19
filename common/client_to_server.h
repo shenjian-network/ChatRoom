@@ -61,7 +61,7 @@ class ClientToServerTextToUsers:public ClientToServerBase
 {
 public:
     ClientToServerTextToUsers();
-    ClientToServerTextToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo);
+    ClientToServerTextToUsers(const PacketHead& ph,const int& unum,char** uinfo,const char* cinfo);
     virtual ~ClientToServerTextToUsers();
     void get_string(char* s);
     unsigned int get_user_num();
@@ -81,7 +81,7 @@ class ClientToServerTextFileToUsers:public ClientToServerBase
 {
 public:
     ClientToServerTextFileToUsers();
-    ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,const char** uinfo,const char* cinfo,const char* fname);
+    ClientToServerTextFileToUsers(const PacketHead& ph,const int& unum,char** uinfo,const char* cinfo,const char* fname);
     virtual ~ClientToServerTextFileToUsers();
     void get_string(char* s);
     char* get_file_name();

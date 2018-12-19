@@ -13,7 +13,7 @@
 class PacketHead{
 public:
     PacketHead();
-    PacketHead(const unsigned short&,const unsigned short&,const unsigned int&);
+    PacketHead(const unsigned short s1,const unsigned short s2,const unsigned int i1);
     /*set_string可以将网络序的规范字符串转为该类（主机序）内部存储形式*/
     /*get_string可以将该类内部存储（主机序）改为网络序的规范字符串*/
     /*其他均为主机序的自定义设置和获取*/
@@ -21,9 +21,9 @@ public:
     unsigned short get_function_type();
     unsigned int get_length()const;
     void get_string(char* s);
-    void set_packet_type(const unsigned short& us);
-    void set_function_type(const unsigned short& us);
-    void set_length(const unsigned int& ui);
+    void set_packet_type(const unsigned short us);
+    void set_function_type(const unsigned short us);
+    void set_length(const unsigned int ui);
     void set_string(const char* s);
     /*packet_type*/
     /*Client to Server*/
