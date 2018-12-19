@@ -30,13 +30,16 @@ SOURCES += \
         tcpclient.cpp \
     common/client_to_server.cpp \
     common/packet_head.cpp \
-    common/server_to_client.cpp
+    common/server_to_client.cpp \
+    main.cpp \
+    tcpclient.cpp
 
 HEADERS += \
         tcpclient.h \
     common/client_to_server.h \
     common/packet_head.h \
-    common/server_to_client.h
+    common/server_to_client.h \
+    tcpclient.h
 
 FORMS += \
         tcpclient.ui
@@ -45,5 +48,3 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-DISTFILES +=
