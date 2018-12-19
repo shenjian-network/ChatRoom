@@ -13,12 +13,20 @@
 #include <QTextBrowser>
 #include <QStackedLayout>
 #include <QCheckBox>
+#include <QRegExpValidator>
+#include <QDateTime>
+#include <QTimer>
+#include <QString>
 
 TcpClient::TcpClient(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::TcpClient)
 {
     ui->setupUi(this);
+    QTimer *timer=new QTimer(this);
+    timer->start(1000); // 每次发射timeout信号时间间隔为1秒
+    connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()));
+    time.start();
 }
 
 TcpClient::~TcpClient()
@@ -27,13 +35,16 @@ TcpClient::~TcpClient()
 }
 
 
-bool TcpClient::ConnectToHost(){
+// 连接到服务器 (FINISHED)
+bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
     socket = new QTcpSocket(this);
+    this->ip = ip;
+    this->port = port;
 
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
 
     qDebug() << "connecting...";
-    socket->connectToHost("192.168.1.1", 12306);
+    socket->connectToHost(ip, port);
 
     if(!socket->waitForConnected(5000)){
         qDebug() << "Error: " << socket->errorString();
@@ -45,7 +56,7 @@ bool TcpClient::ConnectToHost(){
 
 
 
-
+// 显示登录界面 (FINISHED)
 void TcpClient::loginGUI(){
     // login window
     loginWindow = new QWidget;
@@ -57,6 +68,9 @@ void TcpClient::loginGUI(){
     QLabel *unameLabel = new QLabel("登录");
     QLineEdit *unameEdit = new QLineEdit();
     unameLabel->setBuddy(unameEdit);
+    QRegExp rx("[^\u4e00-\u9fa5]+");
+    QRegExpValidator *pReg = new QRegExpValidator(rx, this);
+    unameEdit->setValidator(pReg);
     layout1->addWidget(unameLabel);
     layout1->addWidget(unameEdit);
     layout1->setContentsMargins(30, 10, 30, 10);
@@ -65,26 +79,51 @@ void TcpClient::loginGUI(){
     QLabel *upwdLabel = new QLabel("密码");
     QLineEdit *upwdEdit = new QLineEdit();
     upwdEdit->setEchoMode(QLineEdit::Password);
+    upwdEdit->setValidator(pReg);
     unameLabel->setBuddy(upwdEdit);
     layout2->addWidget(upwdLabel);
     layout2->addWidget(upwdEdit);
     layout2->setContentsMargins(30, 10, 30, 10);
 
     QHBoxLayout * layout3 = new QHBoxLayout;
+    QCheckBox * rememberPwd = new QCheckBox;
+    rememberPwd->setText("记住密码");   // 还没这个功能
+    rememberPwd->setCheckable(true);
+    QCheckBox * showPwd = new QCheckBox;
+    showPwd->setText("显示密码");
+    showPwd->setCheckable(true);
+    layout3->addWidget(rememberPwd);
+    layout3->addWidget(showPwd);
+    layout3->setContentsMargins(100, 10, 100, 10);
+
+    QHBoxLayout * layout4 = new QHBoxLayout;
     QPushButton * login = new QPushButton("登录");
     QPushButton * signup = new QPushButton("注册");
-    layout3->addWidget(login);
-    layout3->addWidget(signup);
-    layout3->setContentsMargins(100, 10, 100, 10);
+    QPushButton * changePwd = new QPushButton("修改密码");
+
+    login->setStyleSheet("QPushButton{background-color:rgb(0, 150, 255)}"
+                         "QPushButton:hover{background-color:rgb(0, 255, 255)}");
+    signup->setStyleSheet("QPushButton{background-color:rgb(0, 150, 255)}"
+                         "QPushButton:hover{background-color:rgb(0, 255, 255)}");
+    changePwd->setStyleSheet("QPushButton{background-color:rgb(0, 150, 255)}"
+                         "QPushButton:hover{background-color:rgb(0, 255, 255)}");
+
+    layout4->addWidget(login);
+    layout4->addWidget(signup);
+    layout4->addWidget(changePwd);
+    layout4->setContentsMargins(100, 10, 100, 10);
 
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(layout1);
     mainLayout->addLayout(layout2);
     mainLayout->addLayout(layout3);
+    mainLayout->addLayout(layout4);
     mainLayout->setMargin(50);
 
     connect(login, SIGNAL(clicked()), this, SLOT(on_loginBtn_clicked()));
     connect(signup, SIGNAL(clicked()), this, SLOT(on_signupBtn_clicked()));
+    connect(changePwd, SIGNAL(clicked()), this, SLOT(on_changePwdBtn_clicked()));
+    connect(showPwd, SIGNAL(stateChanged(int)), this, SLOT(on_showPwdCheckBox_stateChanged()));
 
     loginWindow->setLayout(mainLayout);
     loginWindow->resize(500, 300);
@@ -107,7 +146,7 @@ void TcpClient::loginGUI(){
 
 
 
-// 需要读包，获取错误信息
+// 显示错误信息窗口 (FINISHED)
 void TcpClient::errorGUI(const unsigned short & err_type){
     QMessageBox *errorBox = new QMessageBox();
 
@@ -141,11 +180,72 @@ void TcpClient::errorGUI(const unsigned short & err_type){
     errorBox->show();
 }
 
+// 显示错误信息窗口，重载 （FINISHED）
+void TcpClient::errorGUI(const QString& err){
+    QMessageBox *errorBox = new QMessageBox();
+    errorBox->setWindowTitle("错误");
+    errorBox->setText(err);
+    errorBox->show();
+}
 
 
+
+// 显示chatRoomGUI (TODO)
+// 1. 需要修改GUI  2. 很多接口没实现
 void TcpClient::chatRoomGUI(){
     chatRoomWindow = new QWidget;
     chatRoomWindow->setWindowTitle("聊天室");
+    chatRoomWindow->setFixedSize(700, 700);
+
+    QHBoxLayout * subsublayout1 = new QHBoxLayout;
+    QLabel * curUserLabel = new QLabel("当前用户");
+    QLineEdit * curUsername = new QLineEdit(this->username);
+    curUsername->setEnabled(false);
+    subsublayout1->addWidget(curUserLabel);
+    subsublayout1->addWidget(curUsername);
+
+    QHBoxLayout * subsublayout2 = new QHBoxLayout;
+    QLabel * ipLabel = new QLabel("IP地址");
+    QLineEdit * ipaddr = new QLineEdit(this->ip);
+    ipaddr->setEnabled(false);
+    subsublayout2->addWidget(ipLabel);
+    subsublayout2->addWidget(ipaddr);
+
+    QHBoxLayout * subsublayout3 = new QHBoxLayout;
+    QLabel * portLabel = new QLabel("端口号");
+    QLineEdit * port = new QLineEdit(QString::number(this->port, 10));
+    port->setEnabled(false);
+    subsublayout3->addWidget(portLabel);
+    subsublayout3->addWidget(port);
+
+    QVBoxLayout * sublayout1 = new QVBoxLayout;
+    sublayout1->addLayout(subsublayout1);
+    sublayout1->addLayout(subsublayout2);
+    sublayout1->addLayout(subsublayout3);
+
+    QHBoxLayout * subsublayout4 = new QHBoxLayout;
+    QLabel * loginTimeLabel = new QLabel("登入时间");
+    QLineEdit * loginTime = new QLineEdit(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss dddd"));
+    loginTime->setEnabled(false);
+    subsublayout4->addWidget(loginTimeLabel);
+    subsublayout4->addWidget(loginTime);
+
+    QHBoxLayout * subsublayout5 = new QHBoxLayout;
+    QLabel * onlineTimeLabel = new QLabel("在线时间");
+    QLineEdit * onlineTime = new QLineEdit();
+    QLabel * unit = new QLabel("秒");
+    onlineTime->setEnabled(false);
+    subsublayout5->addWidget(onlineTimeLabel);
+    subsublayout5->addWidget(onlineTime);
+    subsublayout5->addWidget(unit);
+
+    QVBoxLayout * sublayout2 = new QVBoxLayout;
+    sublayout2->addLayout(subsublayout4);
+    sublayout2->addLayout(subsublayout5);
+
+    QHBoxLayout * layout0 = new QHBoxLayout;
+    layout0->addLayout(sublayout1);
+    layout0->addLayout(sublayout2);
 
     QHBoxLayout * layout1 = new QHBoxLayout;
     QTextBrowser * textfield = new QTextBrowser;
@@ -163,8 +263,8 @@ void TcpClient::chatRoomGUI(){
     QHBoxLayout * layout2 = new QHBoxLayout;
 //    layout2->setStackingMode(QStackedLayout::StackAll);
     QTextEdit * textedit = new QTextEdit;
-    textedit->setMaximumSize(700, 300);
-    textedit->setMinimumSize(700, 300);
+    textedit->setMaximumSize(678, 300);
+    textedit->setMinimumSize(678, 300);
     textedit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     layout2->addWidget(textedit);
 
@@ -175,6 +275,7 @@ void TcpClient::chatRoomGUI(){
     layout2->addWidget(send);
 
     QVBoxLayout * mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(layout0);
     mainLayout->addLayout(layout1);
     mainLayout->addLayout(layout2);
 
@@ -188,37 +289,40 @@ void TcpClient::chatRoomGUI(){
 
 
 
-void TcpClient::changePwdGUI(){
-
-}
-
+// 配置界面 （TODO）
 void TcpClient::configGUI(){
-
+    // 到底有哪些配置?
 }
 
-// two conditions... if it is myself, yor'are out; if it is other, modify GUI
+
+// 下线的操作 （TODO）
+// 需要熄灭用户栏，如果下线的是自己，会退出
 void TcpClient::offline(){
 
 }
 
-// only one condition
+// 上线的操作（TODO）
+// 需要点亮用户栏
 void TcpClient::online(){
 
 }
 
+// 清屏，清除对话框的内容 （TODO）
 void TcpClient::cls(){
 
 }
 
+// 显示文本 （TODO）
 void TcpClient::showText(){
 
 }
 
-// read config
+// 设置配置 （TODO）
 void TcpClient::setConfig(){
 
 }
 
+// 向用户列表中添加一项 （FINISHED)
 void TcpClient::insertListWidget(QString desc){
     QListWidgetItem * item = new QListWidgetItem;
     QCheckBox * box = new QCheckBox(desc);
@@ -227,6 +331,7 @@ void TcpClient::insertListWidget(QString desc){
     userList->setItemWidget(item, box);
 }
 
+// 选择用户列表中所有用户（FINISHED)
 void TcpClient::selectAll(){
     int count = userList->count();
     QListWidgetItem * item;
@@ -240,6 +345,7 @@ void TcpClient::selectAll(){
     }
 }
 
+// 不选用户列表所有用户（FINISHED)
 void TcpClient::selectNone(){
     int count = userList->count();
     QListWidgetItem * item;
@@ -253,6 +359,7 @@ void TcpClient::selectNone(){
     }
 }
 
+// 得到用户列表的用户选中的状态（TODO）
 void TcpClient::getCheckState(){
     int count = userList->count();
     bool isChecked = true;
@@ -272,37 +379,47 @@ void TcpClient::getCheckState(){
     }
 }
 
-// 更改密码成功GUI
+
+// 更改密码成功GUI （TODO）
 void TcpClient::changePwdSuccessGUI(){
 
 }
 
 
+
+// 报道成功操作 (FINISHED)
+// 1. 登录成功， 进入chatRoomGUI
+// 2. 注册成功，再登录一次
+void TcpClient::reportSuccess(){
+    auto length = my_server_to_client_report_success.get_packet_head().get_length();
+
+    // 2. 注册成功包
+    if(length == 0){
+        errorGUI("注册成功，请重新登录");
+        QVector<QObject*> layouts = loginWindow->layout()->children().toVector();
+        QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(1);
+        QLineEdit* line = static_cast<QLineEdit*>(item->widget());
+        line->clear(); // 清空密码就行了
+    }
+    else{ // 1. 登录成功包
+        loginWindow->close();
+    }
+}
+
+
+// 显示文本内容（TODO）
 void TcpClient::showFileInfo(){
 
 }
 
+// 写入文件内容 （TODO）
 void TcpClient::writeFileContain(){
 
 }
 
 
 
-void TcpClient::reportSuccess(){
-    auto length = my_server_to_client_report_success.get_packet_head().get_length();
-
-    // 注册成功包
-    if(length == 0){
-        // TODO 注册成功
-    }
-    else{ // 登录成功包
-        loginWindow->hide();
-        chatRoomGUI();
-    }
-}
-
-
-
+// *****辅助函数***** //
 
 std::string QStringToString(const QString & myQstring)
 {
@@ -317,12 +434,9 @@ std::string & stringPadding(std::string && myString, const unsigned int & len)
 
 
 
-
-
 /********************slots*********************************/
 
-/* 点击登录按钮的槽函数
- */
+// 登录按钮（FINISHED）
 void TcpClient::on_loginBtn_clicked()
 {
     QVector<QObject*> layouts = loginWindow->layout()->children().toVector();
@@ -338,26 +452,19 @@ void TcpClient::on_loginBtn_clicked()
     qDebug() << "password: " << password;
 
     if(username == "" || password == "" ){
-        QMessageBox *errorBox = new QMessageBox();
-        errorBox->setWindowTitle("错误");
-        errorBox->setText("用户名或密码不能为空!");
-        errorBox->show();
+        errorGUI("用户名或密码不能为空");
         return;
     }
 
     if(username.size() > 32 || password.size() > 32){
-        QMessageBox *errorBox = new QMessageBox();
-        errorBox->setWindowTitle("错误");
-        errorBox->setText("用户名或密码不能超过32字节!");
-        errorBox->show();
+        errorGUI("用户名或密码不能超过32字节");
         return;
     }
 
     PacketHead sendPacketHead;
 
-
-//    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
-//    sendPacketHead.set_function_type(PacketHead::kC2SReportLoginIn);
+    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
+    sendPacketHead.set_function_type(PacketHead::kC2SReportLoginIn);
 
     sendPacketHead.set_length(64);
 
@@ -365,17 +472,18 @@ void TcpClient::on_loginBtn_clicked()
 
     sendClientToServerReportLogin.set_string(sendPacketHead,
         (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
-
     
     char* tmpStr = new char[sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+
     delete[] tmpStr;
 
+    this->username = username;
 }
 
 
-/*   需要向服务器发送包 */
+// 注册按钮 (FINISHED)
 void TcpClient::on_signupBtn_clicked()
 {
     QVector<QObject*> layouts = loginWindow->layout()->children().toVector();
@@ -391,26 +499,20 @@ void TcpClient::on_signupBtn_clicked()
     qDebug() << "password: " << password;
 
     if(username == "" || password == "" ){
-        QMessageBox *errorBox = new QMessageBox();
-        errorBox->setWindowTitle("错误");
-        errorBox->setText("用户名或密码不能为空!");
-        errorBox->show();
+        errorGUI("用户名或密码不能为空");
         return;
     }
 
     if(username.size() > 32 || password.size() > 32){
-        QMessageBox *errorBox = new QMessageBox();
-        errorBox->setWindowTitle("错误");
-        errorBox->setText("用户名或密码不能超过32字节!");
-        errorBox->show();
+        errorGUI("用户名或密码不能超过32字节");
         return;
     }
 
     PacketHead sendPacketHead;
 
 
-//    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
-//    sendPacketHead.set_function_type(PacketHead::kC2SReportLoginIn);
+    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
+    sendPacketHead.set_function_type(PacketHead::kC2SReportRegister);  //注册
 
     sendPacketHead.set_length(64);
 
@@ -422,34 +524,155 @@ void TcpClient::on_signupBtn_clicked()
 
     char* tmpStr = new char[sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+
     delete[] tmpStr;
 }
 
-void TcpClient::on_sendBtn_clicked(){
-    qDebug() << "it works";
 
+// 发送消息按钮 (TODO)
+void TcpClient::on_sendBtn_clicked(){
     QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();
-    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
+    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[2])->itemAt(0);
     QTextEdit* line = static_cast<QTextEdit*>(item->widget());
     QString text =  line->toPlainText();
-    line->clear();
+    line->clear();  //清空输入栏的内容
 
     item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(0);
     line = static_cast<QTextBrowser*>(item->widget());
-    line->append(text);
+    line->append(text);  // 本地先显示自己刚刚发送的内容
 
-    // 还需要向服务器发啊
+    // TODO 向服务器发送消息
+    // 需要：要发送的用户和消息内容
+
+    qDebug() << "消息内容：" << text;
 }
 
 
+// 断线处理 (FINISHED)
 void TcpClient::disconnected(){
-
+    errorGUI("您断线了，请检查网络设置");
 }
 
 
+// 修改密码按钮 (FINISHED)
+void TcpClient::on_changePwdBtn_clicked(){
+    changePwdWindow = new QWidget;
+    changePwdWindow->setWindowTitle("修改密码");
+    changePwdWindow->setFixedSize(QSize(500, 300));
+
+    QHBoxLayout * layout1 = new QHBoxLayout;
+    QLabel * originalPwdLabel = new QLabel("原始密码 ");
+    QLineEdit * originalPwd = new QLineEdit;
+    originalPwd->setEchoMode(QLineEdit::Password);
+    layout1->addWidget(originalPwdLabel);
+    layout1->addWidget(originalPwd);
+    layout1->setContentsMargins(50, 10, 50, 10);
+
+    QHBoxLayout * layout2 = new QHBoxLayout;
+    QLabel * newPwdLabel = new QLabel("新密码   ");
+    QLineEdit * newPwd = new QLineEdit;
+    newPwd->setEchoMode(QLineEdit::Password);
+    layout2->addWidget(newPwdLabel);
+    layout2->addWidget(newPwd);
+    layout2->setContentsMargins(50, 10, 50, 10);
+
+    QHBoxLayout * layout3 = new QHBoxLayout;
+    QLabel * acknewPwdLabel = new QLabel("确认新密码");
+    QLineEdit * acknewPwd = new QLineEdit;
+    acknewPwd->setEchoMode(QLineEdit::Password);
+    layout3->addWidget(acknewPwdLabel);
+    layout3->addWidget(acknewPwd);
+    layout3->setContentsMargins(50, 10, 50, 10);
+
+    QHBoxLayout * layout4 = new QHBoxLayout;
+    QPushButton * ack = new QPushButton("确认");
+    QPushButton * cancel = new QPushButton("取消");
+    ack->setFixedSize(QSize(75,30));
+    cancel->setFixedSize(QSize(75,30));
+    layout4->addWidget(ack);
+    layout4->addWidget(cancel);
+    layout4->setContentsMargins(50, 10, 50, 10);
 
 
+    QVBoxLayout * mainlayout = new QVBoxLayout;
+    mainlayout->addLayout(layout1);
+    mainlayout->addLayout(layout2);
+    mainlayout->addLayout(layout3);
+    mainlayout->addLayout(layout4);
+
+    connect(ack, SIGNAL(clicked()), this, SLOT(on_changePwdAckBtn_clicked()));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(on_changePwdCancelBtn_clicked()));
+
+    changePwdWindow->setLayout(mainlayout);
+    changePwdWindow->show();
+}
+
+
+// 在修改密码界面，点击“确认”，将发送 (TODO)
+void TcpClient::on_changePwdAckBtn_clicked(){
+    QVector<QObject*> layouts = changePwdWindow->layout()->children().toVector();
+    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
+    QLineEdit* line = static_cast<QLineEdit*>(item->widget());
+    QString originalPwd = line->text();
+
+    item = static_cast<QHBoxLayout*>(layouts[1])->itemAt(1);
+    line = static_cast<QLineEdit*>(item->widget());
+    QString newPwd = line->text();
+
+    item = static_cast<QHBoxLayout*>(layouts[2])->itemAt(1);
+    line = static_cast<QLineEdit*>(item->widget());
+    QString ackNewPwd = line->text();
+
+    if(newPwd != ackNewPwd){
+        errorGUI("新密码不一致");
+        return;
+    }
+
+    // TODO 发送修改密码消息
+
+    qDebug() << "原始密码" << originalPwd;
+    qDebug() << "新密码" << newPwd;
+    qDebug() << "确认新密码" << ackNewPwd;
+
+
+
+    changePwdWindow->close();
+}
+
+
+// 在修改密码界面，点击“取消”，将关闭窗口 (FINISHED)
+void TcpClient::on_changePwdCancelBtn_clicked(){
+    changePwdWindow->close();
+}
+
+
+// 登录界面，显示密码
+void TcpClient::on_showPwdCheckBox_stateChanged(){
+    QVector<QObject*> layouts = loginWindow->layout()->children().toVector();
+    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(1);
+    QLayoutItem * item2 =  static_cast<QHBoxLayout*>(layouts[2])->itemAt(1);
+    QCheckBox * box = static_cast<QCheckBox*>(item2->widget());
+    QLineEdit* line = static_cast<QLineEdit*>(item->widget());
+
+    if(box->isChecked()){
+        line->setEchoMode(QLineEdit::Normal);
+    }else{
+        line->setEchoMode(QLineEdit::Password);
+    }
+}
+
+ // 更新时间
+void TcpClient::timeUpdate(){
+    QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();
+    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
+    item = static_cast<QVBoxLayout*>(item)->itemAt(1);
+    item = static_cast<QHBoxLayout*>(item)->itemAt(1);
+    QLineEdit* line = static_cast<QLineEdit*>(item->widget());
+    line->setText(QString::number(time.elapsed() / 1000));
+}
+
+// 接受到包的处理，状态机 （FINISHED)
 void TcpClient::readyRead(){
     qDebug() << "reading...";
 
@@ -544,7 +767,7 @@ void TcpClient::readyRead(){
                             case PacketHead::kS2CTextAskForClr:
                                 //清屏，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 cls();
-                                break;
+                                break;// two conditions... if it is myself, yor'are out; if it is other, modify GUI
                             default:
                                 qDebug() << "switch kS2CText my_packet_head.get_packet_type() case lost";
                         }

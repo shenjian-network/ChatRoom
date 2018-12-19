@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTcpSocket>
 #include <QListWidget>
+#include <QTime>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
@@ -33,12 +34,14 @@ public:
     explicit TcpClient(QWidget *parent = nullptr);
     ~TcpClient();
 
-    bool ConnectToHost();
+    bool ConnectToHost(const QString& ip, unsigned short port);
 
     void loginGUI();
 
     // msg box,
     void errorGUI(const unsigned short & err_type);
+
+    void errorGUI(const QString& err);
 
     //显示更改密码成功窗口
     void changePwdSuccessGUI();
@@ -46,8 +49,6 @@ public:
     void reportSuccess();
 
     void chatRoomGUI();
-
-    void changePwdGUI();
 
     void configGUI();
 
@@ -97,6 +98,21 @@ private slots:
 
     void on_sendBtn_clicked();
 
+    // 在登录界面，点击“修改密码”，将显示对话框
+    void on_changePwdBtn_clicked();
+
+    // 在修改密码界面，点击“确认”，将发送
+    void on_changePwdAckBtn_clicked();
+
+    // 在修改密码界面，点击“取消”，将关闭窗口
+    void on_changePwdCancelBtn_clicked();
+
+    // 登录界面，显示密码
+    void on_showPwdCheckBox_stateChanged();
+
+    // 更新时间
+    void timeUpdate();
+
 private:
     PacketHead my_packet_head;
     ServerToClientReportSuccess my_server_to_client_report_success;
@@ -112,7 +128,14 @@ private:
 private:
     QWidget *loginWindow;
     QWidget *chatRoomWindow;
+    QWidget *changePwdWindow;
     QListWidget * userList;
+    QTime time;
+
+    QString username;
+    QString ip;
+    unsigned short port;
+
 };
 
 #endif // TCPCLIENT_H
