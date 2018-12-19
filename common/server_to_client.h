@@ -27,7 +27,7 @@ class ServerToClientReportSuccess:public ServerToClientBase
 {
 public:
     ServerToClientReportSuccess();
-    ServerToClientReportSuccess(const PacketHead& ph,char*ltime,int unum,char**ustatus);
+    ServerToClientReportSuccess(const PacketHead& ph,const char*ltime,const int unum,char**ustatus);
     ~ServerToClientReportSuccess();
     void get_string(char* s);
     char* get_last_login_time();
@@ -45,7 +45,7 @@ class ServerToClientInform:public ServerToClientBase
 {
 public:
     ServerToClientInform();
-    ServerToClientInform(const PacketHead& ph,char*uname);
+    ServerToClientInform(const PacketHead& ph,const char*uname);
     ~ServerToClientInform(){}
     void get_string(char* s);
     char* get_user_name();
@@ -59,7 +59,7 @@ class ServerToClientText:public ServerToClientBase
 {
 public:
     ServerToClientText();
-    ServerToClientText(const PacketHead& ph,char*uname,char*ntime);
+    ServerToClientText(const PacketHead& ph,const char*uname,const char*ntime);
     ~ServerToClientText(){}
     void get_string(char* s);
     char* get_user_from_name();
@@ -75,7 +75,7 @@ class ServerToClientTextSimpleText:public ServerToClientText
 {
 public:
     ServerToClientTextSimpleText();
-    ServerToClientTextSimpleText(const PacketHead& ph,char*uname,char*ntime,char*scontain);
+    ServerToClientTextSimpleText(const PacketHead& ph,const char*uname,const char*ntime,const char*scontain);
     ~ServerToClientTextSimpleText();
     void get_string(char* s);
     char* get_simple_text_contain();
@@ -93,7 +93,7 @@ class ServerToClientTextFileInfo:public ServerToClientText
 {
 public:
     ServerToClientTextFileInfo();
-    ServerToClientTextFileInfo(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey);
+    ServerToClientTextFileInfo(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey);
     ~ServerToClientTextFileInfo(){}
     void get_string(char* s);
     char* get_file_name();
@@ -111,7 +111,7 @@ class ServerToClientTextFileContain:public ServerToClientTextFileInfo
 {
 public:
     ServerToClientTextFileContain();
-    ServerToClientTextFileContain(const PacketHead& ph,char*uname,char*ntime,char*fname,unsigned int fkey,char* fcontain);
+    ServerToClientTextFileContain(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey,const char* fcontain);
     ~ServerToClientTextFileContain();
     void get_string(char* s);
     char* get_file_contain();
@@ -132,7 +132,7 @@ class ServerToClientUserSetUpdate:public ServerToClientBase
 {
 public:
     ServerToClientUserSetUpdate();
-    ServerToClientUserSetUpdate(const PacketHead& ph,char*sc);
+    ServerToClientUserSetUpdate(const PacketHead& ph,const char*sc);
     ~ServerToClientUserSetUpdate();
     void get_string(char* s);
     char* get_user_set_data();
