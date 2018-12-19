@@ -42,7 +42,7 @@ void TcpClient::readyRead(){
     current_byte_array += socket->readAll();
     while(current_byte_array.size() >= current_byte_num_to_read)
     {
-        if(current_byte_num_to_read == 0)
+        if(current_byte_num_to_read)
         {
             set_byte_array = current_byte_array.left(current_byte_num_to_read);
             current_byte_array.remove(0, current_byte_num_to_read);
@@ -59,27 +59,27 @@ void TcpClient::readyRead(){
                 my_packet_head.set_string(set_byte_array.constData());
                 switch(my_packet_head.get_packet_type())
                 {
-                    case kS2CReport:
+                    case PacketHead::kS2CReport:
                         switch(my_packet_head.get_function_type())
                         {
-                            case kS2CReportSuccess:
-                            case kS2CReportSuccessDup:
-                                //登录成功
+                            case PacketHead::kS2CReportSuccess:
+                            case PacketHead::kS2CReportSuccessDup:
+                                //登录/注册成功，进入READ_SERVER_TO_CLIENT_REPORT_SUCCESS状态准备读取后续信息
                                 current_read_state = READ_SERVER_TO_CLIENT_REPORT_SUCCESS;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kS2CReportUpdateSucess:
+                            case PacketHead::kS2CReportUpdateSucess:
                                 //更改密码成功，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 changePwdSuccessGUI();
                                 break;
-                            case kS2CReportWrongPwd:
-                            case kS2CReportNoExist:
-                            case kS2CReportMustUpdate:
-                            case kS2CReportDuplicated:
-                            case kS2CReportNameNotAccess:
-                            case kS2CReportPwdNotAccess:
-                            case kS2CReportLastPwdWrong:
-                            case kS2CReportNowPwdNotAccess:
+                            case PacketHead::kS2CReportWrongPwd:
+                            case PacketHead::kS2CReportNoExist:
+                            case PacketHead::kS2CReportMustUpdate:
+                            case PacketHead::kS2CReportDuplicated:
+                            case PacketHead::kS2CReportNameNotAccess:
+                            case PacketHead::kS2CReportPwdNotAccess:
+                            case PacketHead::kS2CReportLastPwdWrong:
+                            case PacketHead::kS2CReportNowPwdNotAccess:
                                 //登陆失败和注册失败，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 errorGUI(my_packet_head.get_function_type());
                                 break;
@@ -87,41 +87,42 @@ void TcpClient::readyRead(){
                                 qDebug << "switch kS2CReport my_packet_head.get_packet_type() case lost" << endl;
                         }
                         break;
-                    case kS2CInform:
+                    case PacketHead::kS2CInform:
                         switch(my_packet_head.get_function_type())
                         {
-                            case kS2CInformOnline:
+                            case PacketHead::kS2CInformOnline:
                                 //提示上线,进入online状态
                                 current_read_state = READ_SERVER_CLIENT_ONLINE;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kS2CInformOffline:
+                            case PacketHead::kS2CInformOffline:
                                 //提示下线，进入offline状态
                                 current_read_state = READ_SERVER_CLIENT_OFFLINE;
+                                current_byte_num_to_read = my_packet_head.get_length();
                                 break;
                             default:
                                 qDebug << "switch kS2CInform my_packet_head.get_packet_type() case lost" << endl;
                         }
                         break;
-                    case kS2CText:
+                    case PacketHead::kS2CText:
                         switch(my_packet_head.get_function_type())
                         {
-                            case kS2CTextSimpleText:
+                            case PacketHead::kS2CTextSimpleText:
                                 //文本信息包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_SIMPLE_TEXT;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kS2CTextFileInfo:
+                            case PacketHead::kS2CTextFileInfo:
                                 //文本信息包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_INFO;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kS2CTextFileContain:
+                            case PacketHead::kS2CTextFileContain:
                                 //文本内容包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kS2CTextAskForClr:
+                            case PacketHead::kS2CTextAskForClr:
                                 //清屏，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 cls();
                                 break;
@@ -129,8 +130,8 @@ void TcpClient::readyRead(){
                                 qDebug << "switch kS2CText my_packet_head.get_packet_type() case lost" << endl;
                         }
                         break;
-                    case kS2CUserSet:
-                        current_read_state = kS2CUserSetUpdate;
+                    case PacketHead::kS2CUserSet:
+                        current_read_state = PacketHead::kS2CUserSetUpdate;
                         current_byte_num_to_read = my_packet_head.get_length();
                         setConfig();
                         break;
