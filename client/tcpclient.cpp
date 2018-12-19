@@ -473,7 +473,7 @@ void TcpClient::on_loginBtn_clicked()
     sendClientToServerReportLogin.set_string(sendPacketHead,
         (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
     
-    char* tmpStr = new char[sendPacketHead.get_length()];
+    char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
     // socket->write(tmpStr, 8 + sendPacketHead.get_length());
 
@@ -631,11 +631,30 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     // TODO 发送修改密码消息
 
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
+    sendPacketHead.set_function_type(PacketHead::kC2SReportUpdate);
+
+    sendPacketHead.set_length(96);
+
+    ClientToServerReportUpdate sendClientToServerReportUpdate;
+
+    sendClientToServerReportUpdate.set_string(sendPacketHead,
+        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(originalPwd), 32) + 
+        stringPadding(QStringToString(newPwd))).c_str());
+    
+    char* tmpStr = new char[8 + sendPacketHead.get_length()];
+    sendClientToServerReportUpdate.get_string(tmpStr);
+    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+
+
+
     qDebug() << "原始密码" << originalPwd;
     qDebug() << "新密码" << newPwd;
     qDebug() << "确认新密码" << ackNewPwd;
-
-
 
     changePwdWindow->close();
 }
