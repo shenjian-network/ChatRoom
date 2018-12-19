@@ -3,6 +3,10 @@
 
 #include <QMainWindow>
 #include <QTcpSocket>
+#include <QListWidget>
+#include "common/client_to_server.h"
+#include "common/packet_head.h"
+#include "common/server_to_client.h"
 
 namespace Ui {
 class TcpClient;
@@ -64,6 +68,15 @@ public:
     // read config
     void setConfig();
 
+
+    void insertListWidget(QString desc);
+
+    void selectAll();
+
+    void selectNone();
+
+    void getCheckState();
+
 private slots:
     // Signal func to handle read event
     //
@@ -76,6 +89,12 @@ private slots:
     // send a packet containing and wait
     // get_string write
 
+    void on_loginBtn_clicked();
+
+    void on_signupBtn_clicked();
+
+    void on_sendBtn_clicked();
+
 private:
     PacketHead my_packet_head;
     ServerToClientReportSuccess my_server_to_client_report_success;
@@ -87,6 +106,11 @@ private:
 
     QTcpSocket *socket;
     Ui::TcpClient *ui;
+
+private:
+    QWidget *loginWindow;
+    QWidget *chatRoomWindow;
+    QListWidget * userList;
 };
 
 #endif // TCPCLIENT_H
