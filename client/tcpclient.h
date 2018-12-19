@@ -43,6 +43,8 @@ public:
     //显示更改密码成功窗口
     void changePwdSuccessGUI();
 
+    void reportSuccess();
+
     void chatRoomGUI();
 
     void changePwdGUI();

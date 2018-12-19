@@ -1,4 +1,4 @@
-#include "tcpclient.h"
+﻿#include "tcpclient.h"
 #include "ui_tcpclient.h"
 #include <QDialog>
 #include <QPushButton>
@@ -110,9 +110,34 @@ void TcpClient::loginGUI(){
 // 需要读包，获取错误信息
 void TcpClient::errorGUI(const unsigned short & err_type){
     QMessageBox *errorBox = new QMessageBox();
-    // TODO: 读包
 
-    errorBox->setText("错误！");
+    switch (err_type) {
+    case PacketHead::kS2CReportWrongPwd:
+        errorBox->setText("登录失败，密码错误");
+        break;
+    case PacketHead::kS2CReportNoExist:
+        errorBox->setText("登录失败，用户名不存在");
+        break;
+    case PacketHead::kS2CReportMustUpdate:
+        errorBox->setText("登录失败，需要强制改密");
+        break;
+    case PacketHead::kS2CReportDuplicated:
+        errorBox->setText("注册失败，用户名已存在");
+        break;
+    case PacketHead::kS2CReportNameNotAccess:
+        errorBox->setText("注册失败，用户名不符合要求");
+        break;
+    case PacketHead::kS2CReportPwdNotAccess:
+        errorBox->setText("注册失败，密码不符合要求");
+        break;
+    case PacketHead::kS2CReportLastPwdWrong:
+        errorBox->setText("更改密码失败，原密码错误");
+        break;
+    case PacketHead::kS2CReportNowPwdNotAccess:
+        errorBox->setText("更改密码失败，现密码不符合规范");
+        break;
+    }
+
     errorBox->show();
 }
 
@@ -263,6 +288,37 @@ void TcpClient::writeFileContain(){
 
 
 
+void TcpClient::reportSuccess(){
+    auto length = my_server_to_client_report_success.get_packet_head().get_length();
+
+    // 注册成功包
+    if(length == 0){
+        // TODO 注册成功
+    }
+    else{ // 登录成功包
+        loginWindow->hide();
+        chatRoomGUI();
+    }
+}
+
+
+
+
+std::string QStringToString(const QString & myQstring)
+{
+    return std::string(myQstring.toLocal8Bit().constData());
+}
+
+std::string & stringPadding(std::string && myString, const unsigned int & len)
+{
+    myString.resize(len, 0);
+    return myString;
+}
+
+
+
+
+
 /********************slots*********************************/
 
 /* 点击登录按钮的槽函数
@@ -281,21 +337,41 @@ void TcpClient::on_loginBtn_clicked()
     qDebug() << "username: " << username;
     qDebug() << "password: " << password;
 
-    if(username == "" || password == ""){
+    if(username == "" || password == "" ){
         QMessageBox *errorBox = new QMessageBox();
         errorBox->setWindowTitle("错误");
         errorBox->setText("用户名或密码不能为空!");
         errorBox->show();
+        return;
     }
 
-    // TODO: 发包
+    if(username.size() > 32 || password.size() > 32){
+        QMessageBox *errorBox = new QMessageBox();
+        errorBox->setWindowTitle("错误");
+        errorBox->setText("用户名或密码不能超过32字节!");
+        errorBox->show();
+        return;
+    }
 
-    // loginWindow->hide();
-    //errorGUI();
+    PacketHead sendPacketHead;
 
-    // TEST CODE:
-    chatRoomGUI();
-    loginWindow->hide();
+
+//    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
+//    sendPacketHead.set_function_type(PacketHead::kC2SReportLoginIn);
+
+    sendPacketHead.set_length(64);
+
+    ClientToServerReportLogin sendClientToServerReportLogin;
+
+    sendClientToServerReportLogin.set_string(sendPacketHead,
+        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
+
+    
+    char* tmpStr = new char[sendPacketHead.get_length()];
+    sendClientToServerReportLogin.get_string(tmpStr);
+    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    delete[] tmpStr;
+
 }
 
 
@@ -314,17 +390,40 @@ void TcpClient::on_signupBtn_clicked()
     qDebug() << "username: " << username;
     qDebug() << "password: " << password;
 
-    if(username == "" || password == ""){
+    if(username == "" || password == "" ){
         QMessageBox *errorBox = new QMessageBox();
         errorBox->setWindowTitle("错误");
         errorBox->setText("用户名或密码不能为空!");
         errorBox->show();
+        return;
     }
 
-    // TODO: 发包
+    if(username.size() > 32 || password.size() > 32){
+        QMessageBox *errorBox = new QMessageBox();
+        errorBox->setWindowTitle("错误");
+        errorBox->setText("用户名或密码不能超过32字节!");
+        errorBox->show();
+        return;
+    }
 
-    // loginWindow->hide();
-    //errorGUI();
+    PacketHead sendPacketHead;
+
+
+//    sendPacketHead.set_packet_type(PacketHead::kC2SReport);
+//    sendPacketHead.set_function_type(PacketHead::kC2SReportLoginIn);
+
+    sendPacketHead.set_length(64);
+
+    ClientToServerReportLogin sendClientToServerReportLogin;
+
+    sendClientToServerReportLogin.set_string(sendPacketHead,
+        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
+
+
+    char* tmpStr = new char[sendPacketHead.get_length()];
+    sendClientToServerReportLogin.get_string(tmpStr);
+    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    delete[] tmpStr;
 }
 
 void TcpClient::on_sendBtn_clicked(){
@@ -459,9 +558,9 @@ void TcpClient::readyRead(){
                         qDebug() << "switch my_packet_head.get_packet_type() case lost";
                 }
                 break;
-            case READ_SERVER_TO_CLIENT_REPORT_SUCCESS://报道成功,收到额外信息（见协议栈），然后打开chatRoom界面
+            case READ_SERVER_TO_CLIENT_REPORT_SUCCESS://报道成功,收到额外信息（见协议栈），进行进一步判断
                 my_server_to_client_report_success.set_string(my_packet_head, set_byte_array.constData());
-                chatRoomGUI();
+                reportSuccess();
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
