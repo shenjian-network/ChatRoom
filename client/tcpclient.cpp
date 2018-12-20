@@ -516,7 +516,7 @@ std::string QStringToString(const QString & myQstring)
     return std::string(myQstring.toLocal8Bit().constData());
 }
 
-std::string & stringPadding(std::string && myString, const unsigned int & len)
+std::string stringPadding(std::string myString, const unsigned int & len)
 {
     myString.resize(len, 0);
     return myString;
@@ -558,14 +558,17 @@ void TcpClient::on_loginBtn_clicked()
 
     sendPacketHead.set_length(64);
 
-    ClientToServerReportLogin sendClientToServerReportLogin;
+    /*sendClientToServerReportLogin.set_string(sendPacketHead,
+        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());*/
+    std::string usernameString = QStringToString(username);
+    std::string passwordString = QStringToString(password);
 
-    sendClientToServerReportLogin.set_string(sendPacketHead,
-        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
-    
-    char* tmpStr = new char[8 + sendPacketHead.get_length()];
+    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
+        stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    // socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
@@ -605,16 +608,18 @@ void TcpClient::on_signupBtn_clicked()
     sendPacketHead.set_function_type(PacketHead::kC2SReportRegister);  //注册
 
     sendPacketHead.set_length(64);
+    /*sendClientToServerReportLogin.set_string(sendPacketHead,
+        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());*/
 
-    ClientToServerReportLogin sendClientToServerReportLogin;
+    std::string usernameString = QStringToString(username);
+    std::string passwordString = QStringToString(password);
 
-    sendClientToServerReportLogin.set_string(sendPacketHead,
-        (stringPadding(QStringToString(username), 32) + stringPadding(QStringToString(password), 32)).c_str());
+    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
+        stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
 
-
-    char* tmpStr = new char[8 + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    // socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 }
@@ -641,15 +646,15 @@ void TcpClient::on_sendBtn_clicked(){
     getCheckState(vecIsChecked, vecName);
 
     int length = vecName.length();
-    int flag = false;
+    int sendToUserCnt = 0;
     for(int i = 0;i < length; ++i){
         qDebug() << vecName[i] << ": " << vecIsChecked[i];
         if(vecIsChecked[i])
-            flag = true;
+            ++sendToUserCnt;
     }
 
     // 如果全是false，即没有选中任何用户，报个错
-    if(!flag){
+    if(!sendToUserCnt){
         errorGUI("未选中任何用户");
         return;
     }
@@ -664,7 +669,39 @@ void TcpClient::on_sendBtn_clicked(){
 
     // 用户列表，如果是true代表打了勾，可以发送
 
+    PacketHead sendPacketHead;
 
+    sendPacketHead.set_packet_type(PacketHead::kC2SText);
+    sendPacketHead.set_function_type(PacketHead::kC2STextToUsers);
+
+    //首先取出文本信息以便计算包长度
+    std::string textString = QStringToString(text);
+
+    //用户数量n（4字节） + 用户名（32 * n）字节 + 文本信息(string.length())
+    sendPacketHead.set_length(4 + 32 * sendToUserCnt + textString.length());
+ 
+    //获取用户名对应的二维数组
+    char **uinfo = new char*[sendToUserCnt];
+    for(int i = 0, j = 0; i < length; ++i)
+        if(vecIsChecked[i])
+        {
+            uinfo[j] = new char[32];
+            strcpy(uinfo[j], stringPadding(QStringToString(vecName[i]), 32).c_str(), 32);
+            j++;
+        }
+
+    //ClientToServerTextToUsers(const PacketHead& ph,const int& unum,char** uinfo,const char* cinfo);
+    ClientToServerTextToUsers sendClientToServerTextToUsers(sendPacketHead,
+        sendToUserCnt, uinfo, textString.c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    sendClientToServerTextToUsers.get_string(tmpStr);
+    // socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+    delete[] tmpStr;
+
+    for(int i = 0; i < sendToUserCnt; ++i)
+        delete[] uinfo[i];
+    delete[] uinfo;
 }
 
 
@@ -781,15 +818,20 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     sendPacketHead.set_length(96);
 
-    ClientToServerReportUpdate sendClientToServerReportUpdate;
-
-    sendClientToServerReportUpdate.set_string(sendPacketHead,
+    /*sendClientToServerReportUpdate.set_string(sendPacketHead,
         (stringPadding(QStringToString(user), 32) + stringPadding(QStringToString(originalPwd), 32) +
-        stringPadding(QStringToString(newPwd), 32)).c_str());
+        stringPadding(QStringToString(newPwd), 32)).c_str());*/
 
-    char* tmpStr = new char[8 + sendPacketHead.get_length()];
+    std::string userString = QStringToString(user);
+    std::string originalPwdString = QStringToString(originalPwd);
+    std::string newPwdString = QStringToString(newPwd);
+
+    ClientToServerReportUpdate sendClientToServerReportUpdate(sendPacketHead,
+        stringPadding(userString, 32).c_str(), stringPadding(originalPwdString, 32).c_str(), stringPadding(newPwdString, 32).c_str())
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    // socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
