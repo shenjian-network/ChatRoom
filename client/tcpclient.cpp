@@ -261,9 +261,10 @@ void TcpClient::chatRoomGUI(){
     textfield->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     // 仅做测试
-    insertListWidget("zhongyuchen");
-    insertListWidget("zhaiyuchen");
-    insertListWidget("liyitao");
+    insertListWidget("zhongyuchen", true);
+    insertListWidget("zhaiyuchen", true);
+    insertListWidget("liyitao", false);
+    // ***************
 
     userList->setFixedSize(160, 370);
 
@@ -288,8 +289,8 @@ void TcpClient::chatRoomGUI(){
 
     QPushButton * send = new QPushButton("发送");
     send->setFixedSize(75, 30);
-    send->setStyleSheet("QPushButton{background-color:rgb(0, 150, 255)}"
-                         "QPushButton:hover{background-color:rgb(0, 255, 255)}");
+    send->setStyleSheet("QPushButton{background:rgba(0, 135, 255, 95%)}"
+                         "QPushButton:hover{background:rgba(0, 255, 255, 75%)}");
 
     QVBoxLayout * subrightLayout = new QVBoxLayout;
     subrightLayout->setContentsMargins(10,10,30,10);
@@ -346,10 +347,18 @@ void TcpClient::setConfig(){
 }
 
 // 向用户列表中添加一项 （FINISHED)
-void TcpClient::insertListWidget(QString desc){
+void TcpClient::insertListWidget(QString name, bool isOnline){
     QListWidgetItem * item = new QListWidgetItem;
-    QCheckBox * box = new QCheckBox(desc);
+    QCheckBox * box = new QCheckBox(name);
     box->setCheckable(true);
+    if(isOnline){
+        box->setStyleSheet("QCheckBox{background: 1px solid transparent}"
+                           "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+    } else {
+        box->setStyleSheet("QCheckBox{background:rgba(196, 196, 196, 50%); color: rgba(64, 64, 64, 50%)}"
+                           "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+    }
+
     userList->addItem(item);
     userList->setItemWidget(item, box);
 }
@@ -403,6 +412,43 @@ void TcpClient::getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& ve
         vecName.push_back(name);
     }
 }
+
+// 设置用户名的状态
+void TcpClient::setUserStatus(QString name, bool isOnline){
+    int count = userList->count();
+
+    QListWidgetItem * item;
+    QWidget * widget;
+    QCheckBox * box;
+    QString curName;
+
+    int flag = false;
+    // O(n)遍历
+    for(int i = 0;i < count; ++i){
+        item = userList->item(i);
+        widget = userList->itemWidget(item);
+        box = static_cast<QCheckBox*>(widget);
+        curName = box->text();
+
+        if(curName == name){
+            flag = true;
+            if(isOnline){
+                box->setStyleSheet("QCheckBox{background: 1px solid transparent}"
+                                   "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+            } else {
+                box->setStyleSheet("QCheckBox{background:rgba(196, 196, 196, 50%); color: rgba(64, 64, 64, 50%)}"
+                                   "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+            }
+            break;
+        }
+    }
+
+    // 如果没找到username, 报错
+    if(!flag){
+        qDebug() << "Fatal Error: 没有这个用户！" << name;
+    }
+}
+
 
 
 // 更改密码成功GUI （TODO）
@@ -566,11 +612,10 @@ void TcpClient::on_sendBtn_clicked(){
         errorGUI("消息不能为空");
         return;
     }
-    line->clear();  //清空输入栏的内容
+
 
     item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
-    line = static_cast<QTextBrowser*>(item->widget());
-    line->append(text);  // 本地先显示自己刚刚发送的内容
+    QTextEdit* line2 = static_cast<QTextBrowser*>(item->widget());
 
     // TODO 向服务器发送消息
     // 需要：要发送的用户和消息内容
@@ -594,6 +639,9 @@ void TcpClient::on_sendBtn_clicked(){
         errorGUI("未选中任何用户");
         return;
     }
+
+    line->clear();  //清空输入栏的内容
+    line2->append(text);  // 本地先显示自己刚刚发送的内容
 
 
     qDebug() << "消息内容：" << text;
@@ -671,7 +719,7 @@ void TcpClient::on_changePwdBtn_clicked(){
 }
 
 
-// 在修改密码界面，点击“确认”，将发送 (TODO)
+// 在修改密码界面，点击“确认”，将发送 (FINISHED)
 void TcpClient::on_changePwdAckBtn_clicked(){
     QVector<QObject*> layouts = changePwdWindow->layout()->children().toVector();
     QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[0])->itemAt(1);
@@ -735,7 +783,7 @@ void TcpClient::on_changePwdCancelBtn_clicked(){
 }
 
 
-// 登录界面，显示密码
+// 登录界面，显示密码 (FINISHED)
 void TcpClient::on_showPwdCheckBox_stateChanged(){
     QVector<QObject*> layouts = loginWindow->layout()->children().toVector();
     QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(1);
@@ -750,7 +798,7 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
     }
 }
 
- // 更新时间
+ // 更新时间 （FINISHED）
 void TcpClient::timeUpdate(){
     if(chatRoomWindow){
         QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();

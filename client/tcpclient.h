@@ -71,14 +71,15 @@ public:
     // read config
     void setConfig();
 
-
-    void insertListWidget(QString desc);
+    void insertListWidget(QString name, bool isOnline);
 
     void selectAll();
 
     void selectNone();
 
     void getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& vecName);
+
+    void setUserStatus(QString name, bool isOnline);
 
 private slots:
     // Signal func to handle read event
