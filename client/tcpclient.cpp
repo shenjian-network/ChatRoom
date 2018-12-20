@@ -1,5 +1,6 @@
 ﻿#include "tcpclient.h"
 #include "ui_tcpclient.h"
+#include <string.h>
 #include <QDialog>
 #include <QPushButton>
 #include <QHBoxLayout>
@@ -696,7 +697,7 @@ void TcpClient::on_sendBtn_clicked(){
         if(vecIsChecked[i])
         {
             uinfo[j] = new char[32];
-            strcpy(uinfo[j], stringPadding(QStringToString(vecName[i]), 32).c_str(), 32);
+            strncpy(uinfo[j], stringPadding(QStringToString(vecName[i]), 32).c_str(), 32);
             j++;
         }
 
@@ -828,26 +829,16 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     sendPacketHead.set_length(96);
 
-    /*sendClientToServerReportUpdate.set_string(sendPacketHead,
-        (stringPadding(QStringToString(user), 32) + stringPadding(QStringToString(originalPwd), 32) +
-        stringPadding(QStringToString(newPwd), 32)).c_str());*/
-
     std::string userString = QStringToString(user);
     std::string originalPwdString = QStringToString(originalPwd);
     std::string newPwdString = QStringToString(newPwd);
 
     ClientToServerReportUpdate sendClientToServerReportUpdate(sendPacketHead,
-        stringPadding(userString, 32).c_str(), stringPadding(originalPwdString, 32).c_str(), stringPadding(newPwdString, 32).c_str())
+        stringPadding(userString, 32).c_str(), stringPadding(originalPwdString, 32).c_str(), stringPadding(newPwdString, 32).c_str());
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
      socket->write(tmpStr, 8 + sendPacketHead.get_length());
-
-     for(int i = 0; i < 8 + sendPacketHead.get_length(); ++i){
-         printf("%x", tmpStr[i]);
-         fflush(stdout);
-     }
-
 
     delete[] tmpStr;
 
