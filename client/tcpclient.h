@@ -81,6 +81,8 @@ public:
 
     void setUserStatus(QString name, bool isOnline);
 
+    void showTextImpl(QString name, QString msg, QDateTime tm);
+
 private slots:
     // Signal func to handle read event
     //

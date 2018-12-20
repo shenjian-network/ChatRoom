@@ -17,6 +17,8 @@
 #include <QDateTime>
 #include <QTimer>
 #include <QString>
+#include <QFile>
+#include <QtWebView/QtWebView>
 
 TcpClient::TcpClient(QWidget *parent) :
     QMainWindow(parent),
@@ -230,7 +232,7 @@ void TcpClient::chatRoomGUI(){
 
     QHBoxLayout * subsublayout4 = new QHBoxLayout;
     QLabel * loginTimeLabel = new QLabel("登入时间");
-    QLineEdit * loginTime = new QLineEdit(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss dddd"));
+    QLineEdit * loginTime = new QLineEdit(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
     loginTime->setEnabled(false);
     subsublayout4->addWidget(loginTimeLabel);
     subsublayout4->addWidget(loginTime);
@@ -256,7 +258,6 @@ void TcpClient::chatRoomGUI(){
     QTextBrowser * textfield = new QTextBrowser;
     userList = new QListWidget;
     textfield->setFixedSize(500, 400);
-    textfield->setHtml("<h1>This is a test</h1>");
     textfield->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     // 仅做测试
@@ -279,7 +280,6 @@ void TcpClient::chatRoomGUI(){
 
 
     QHBoxLayout * layout2 = new QHBoxLayout;
-//    layout2->setStackingMode(QStackedLayout::StackAll);
     QTextEdit * textedit = new QTextEdit;
     textedit->setFixedSize(670, 180);
     textedit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -348,6 +348,7 @@ void TcpClient::cls(){
 // 显示文本 （TODO）
 void TcpClient::showText(){
 
+
 }
 
 // 设置配置 （TODO）
@@ -400,7 +401,7 @@ void TcpClient::selectNone(){
     }
 }
 
-// 得到用户列表的用户选中的状态（TODO）
+// 得到用户列表的用户选中的状态（FINISHED）
 void TcpClient::getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& vecName){
     int count = userList->count();
     bool isChecked;
@@ -498,6 +499,15 @@ void TcpClient::writeFileContain(){
 }
 
 
+// 显示消息，带GUI
+void TcpClient::showTextImpl(QString name, QString msg, QDateTime tm){
+    QVector<QObject*> layouts = chatRoomWindow->layout()->children().toVector();
+    QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
+    QTextEdit* line = static_cast<QTextBrowser*>(item->widget());
+    line->append(name + " <" + tm.toString("yyyy-MM-dd hh:mm:ss") + "> ");
+    line->append("<span style='float:left;'>"+ msg + "</span>");
+
+}
 
 // *****辅助函数***** //
 
@@ -622,14 +632,9 @@ void TcpClient::on_sendBtn_clicked(){
         return;
     }
 
-
     item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
-    QTextEdit* line2 = static_cast<QTextBrowser*>(item->widget());
 
-    // TODO 向服务器发送消息
-    // 需要：要发送的用户和消息内容
 
-    // 用户列表，如果是true代表打了勾，可以发送
     QVector<QString> vecName;
     QVector<bool> vecIsChecked;
 
@@ -650,10 +655,16 @@ void TcpClient::on_sendBtn_clicked(){
     }
 
     line->clear();  //清空输入栏的内容
-    line2->append(text);  // 本地先显示自己刚刚发送的内容
-
+    showTextImpl(username, text, QDateTime::currentDateTime()); //显示自己发送
 
     qDebug() << "消息内容：" << text;
+
+    // TODO 向服务器发送消息
+    // 需要：要发送的用户(vecName和vecIsChecked)和消息内容(text)
+
+    // 用户列表，如果是true代表打了勾，可以发送
+
+
 }
 
 
@@ -817,6 +828,9 @@ void TcpClient::timeUpdate(){
         QLineEdit* line = static_cast<QLineEdit*>(item->widget());
         line->setText(QString::number(time.elapsed() / 1000));
     }
+
+    // 仅做测试
+//    showTextImpl("zhongyuchen", "hello", QDateTime::currentDateTime());
 }
 
 // 接受到包的处理，状态机 （FINISHED)
