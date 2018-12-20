@@ -196,7 +196,6 @@ void TcpClient::errorGUI(const QString& err){
 
 
 // 显示chatRoomGUI (TODO)
-// 1. 需要修改GUI  2. 很多接口没实现
 void TcpClient::chatRoomGUI(){
     chatRoomWindow = new QWidget;
     chatRoomWindow->setWindowTitle("聊天室");
@@ -319,16 +318,26 @@ void TcpClient::configGUI(){
 }
 
 
-// 下线的操作 （TODO）
+// 下线的操作 （FINISHED）
 // 需要熄灭用户栏，如果下线的是自己，会退出
 void TcpClient::offline(){
+    QString name = my_server_to_client_inform.get_user_name();
 
+    // 1. 下线的是自己，代表被T了
+    if(name == this->username){
+        errorGUI("您已被踢出群聊");
+        exit(EXIT_FAILURE); //好像不够安全，没做析构
+    } else{
+        setUserStatus(name, false);
+    }
 }
 
-// 上线的操作（TODO）
+// 上线的操作（FINISHED）
 // 需要点亮用户栏
 void TcpClient::online(){
+    QString name = my_server_to_client_inform.get_user_name();
 
+    setUserStatus(name, true);
 }
 
 // 清屏，清除对话框的内容 （TODO）
