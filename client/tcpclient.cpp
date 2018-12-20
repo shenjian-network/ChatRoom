@@ -34,7 +34,7 @@ TcpClient::TcpClient(QWidget *parent) :
 
     QTimer *timer=new QTimer(this);
     timer->start(1000); // 每次发射timeout信号时间间隔为1秒
-    connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()), Qt::QueuedConnection);
     time.start();
 }
 
@@ -51,7 +51,7 @@ bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
     this->ip = ip;
     this->port = port;
 
-    connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+    connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::QueuedConnection);
 
     qDebug() << "connecting...";
     socket->connectToHost(ip, port);
@@ -131,10 +131,10 @@ void TcpClient::loginGUI(){
     mainLayout->addLayout(layout4);
     mainLayout->setMargin(50);
 
-    connect(login, SIGNAL(clicked()), this, SLOT(on_loginBtn_clicked()));
-    connect(signup, SIGNAL(clicked()), this, SLOT(on_signupBtn_clicked()));
-    connect(changePwd, SIGNAL(clicked()), this, SLOT(on_changePwdBtn_clicked()));
-    connect(showPwd, SIGNAL(stateChanged(int)), this, SLOT(on_showPwdCheckBox_stateChanged()));
+    connect(login, SIGNAL(clicked()), this, SLOT(on_loginBtn_clicked()), Qt::QueuedConnection);
+    connect(signup, SIGNAL(clicked()), this, SLOT(on_signupBtn_clicked()), Qt::QueuedConnection);
+    connect(changePwd, SIGNAL(clicked()), this, SLOT(on_changePwdBtn_clicked()), Qt::QueuedConnection);
+    connect(showPwd, SIGNAL(stateChanged(int)), this, SLOT(on_showPwdCheckBox_stateChanged()), Qt::QueuedConnection);
 
     loginWindow->setLayout(mainLayout);
     loginWindow->resize(500, 300);
@@ -307,7 +307,7 @@ void TcpClient::chatRoomGUI(){
     mainLayout->addLayout(layout2);
 
 
-    connect(send, SIGNAL(clicked()), this, SLOT(on_sendBtn_clicked()));
+    connect(send, SIGNAL(clicked()), this, SLOT(on_sendBtn_clicked()), Qt::QueuedConnection);
 
     chatRoomWindow->setLayout(mainLayout);
     chatRoomWindow->show();
@@ -779,8 +779,8 @@ void TcpClient::on_changePwdBtn_clicked(){
     mainlayout->addLayout(layout3);
     mainlayout->addLayout(layout4);
 
-    connect(ack, SIGNAL(clicked()), this, SLOT(on_changePwdAckBtn_clicked()));
-    connect(cancel, SIGNAL(clicked()), this, SLOT(on_changePwdCancelBtn_clicked()));
+    connect(ack, SIGNAL(clicked()), this, SLOT(on_changePwdAckBtn_clicked()), Qt::QueuedConnection);
+    connect(cancel, SIGNAL(clicked()), this, SLOT(on_changePwdCancelBtn_clicked()), Qt::QueuedConnection);
 
     changePwdWindow->setLayout(mainlayout);
     changePwdWindow->show();
