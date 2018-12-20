@@ -286,13 +286,3 @@ void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
     memcpy(user_set_data,s+8,ulength);
     user_set_data[ulength]=0;   
 } 
-//TODO
-int main()
-{    //for test
-     printf("test:\n");
-     //PacketHead ph;
-     //ph.set_length(32+19+4+4+64);
-     //ServerToClientBase* cb=new ServerToClientTextFileContain(ph,n,t,f,fkey,fcontain);
-     //delete cb;
-     return 1;
-}

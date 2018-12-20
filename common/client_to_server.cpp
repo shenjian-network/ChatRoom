@@ -68,7 +68,7 @@ void ClientToServerReportUpdate::get_string(char* s)
     ClientToServerBase::get_string(s);
     memcpy(s+8,user_name,32);
     memcpy(s+40,last_user_pwd,32);  
-    memcpy(s+40,now_user_pwd,32);    
+    memcpy(s+72,now_user_pwd,32);    
 }
 char* ClientToServerReportUpdate::get_user_name()
 {
