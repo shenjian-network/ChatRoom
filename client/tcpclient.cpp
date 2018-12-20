@@ -40,6 +40,7 @@ TcpClient::TcpClient(QWidget *parent) :
 TcpClient::~TcpClient()
 {
     delete ui;
+    delete socket;
 }
 
 
@@ -59,6 +60,7 @@ bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
         return false;
     }
 
+    qDebug() << "connect success";
     return true;
 }
 
@@ -463,7 +465,7 @@ void TcpClient::setUserStatus(QString name, bool isOnline){
 
 // 更改密码成功GUI （TODO）
 void TcpClient::changePwdSuccessGUI(){
-
+    errorGUI("修改密码成功");
 }
 
 
@@ -483,7 +485,9 @@ void TcpClient::reportSuccess(){
         line->clear(); // 清空密码就行了
     }
     else{ // 1. 登录成功包
+        qDebug() << "登录成功" << this->username;
         loginWindow->close();
+        exit(0);
     }
 }
 
@@ -505,7 +509,13 @@ void TcpClient::showTextImpl(QString name, QString msg, QDateTime tm){
     QLayoutItem * item =  static_cast<QHBoxLayout*>(layouts[1])->itemAt(0);
     QTextEdit* line = static_cast<QTextBrowser*>(item->widget());
     line->append(name + " <" + tm.toString("yyyy-MM-dd hh:mm:ss") + "> ");
-    line->append("<span style='float:left;'>"+ msg + "</span>");
+    QString past = line->toHtml();
+    line->setHtml(past +
+                  "<div style='float:left;background-color: aquamarine; "
+                 "margin-top: 0; margin-right: 20px; margin-bottom: 10px; margin-left: 15px;"
+                 "padding: 10px 10px 10px 0px;"
+                 "border-style: solid; border-color: ;"
+                 "'></div><div style='font-size:18px;'>"+ msg + "</div>");
 
 }
 
@@ -565,7 +575,7 @@ void TcpClient::on_loginBtn_clicked()
     
     char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, 8 + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
@@ -614,7 +624,7 @@ void TcpClient::on_signupBtn_clicked()
 
     char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, 8 + sendPacketHead.get_length());
 
     delete[] tmpStr;
 }
@@ -789,7 +799,13 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     char* tmpStr = new char[8 + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
-    // socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+
+     for(int i = 0; i < 8 + sendPacketHead.get_length(); ++i){
+         printf("%x", tmpStr[i]);
+         fflush(stdout);
+     }
+
 
     delete[] tmpStr;
 
@@ -870,6 +886,7 @@ void TcpClient::readyRead(){
                                 //登录/注册成功，进入READ_SERVER_TO_CLIENT_REPORT_SUCCESS状态准备读取后续信息
                                 current_read_state = READ_SERVER_TO_CLIENT_REPORT_SUCCESS;
                                 current_byte_num_to_read = my_packet_head.get_length();
+
                                 break;
                             case PacketHead::kS2CReportUpdateSucess:
                                 //更改密码成功，这个时候状态机仍然处于等待下一个packet head读入的状态
