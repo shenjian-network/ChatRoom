@@ -48,11 +48,14 @@ void ServerToClientReportSuccess::get_string(char* s)
 {
     int tmpi=htonl(user_num);
     ServerToClientBase::get_string(s);
+    //printf("%s\n", last_login_time);
     memcpy(s+8,last_login_time,19);
+    //printf("%d\n", tmpi);
     memcpy(s+27,(char*)(&tmpi),4);
-    for(int i=0;i<user_num;i++){
-        memcpy(s+31+i*33,user_status[i],33); 
-    }      
+    for (int i = 0; i < user_num; i++)
+    {
+        memcpy(s + 31 + i * 33, user_status[i], 33);
+    }
 }
 char* ServerToClientReportSuccess::get_last_login_time()
 {
@@ -109,22 +112,27 @@ void ServerToClientInform::set_string(const PacketHead& ph,const char* s)
 }  
 /*ServerToClientText*/
 ServerToClientText::ServerToClientText():ServerToClientBase(){}
-ServerToClientText::ServerToClientText(const PacketHead& ph,const char*uname,const char*ntime):ServerToClientBase(ph)
+ServerToClientText::ServerToClientText(const PacketHead& ph,const char*frname,const char* toname,const char*ntime):ServerToClientBase(ph)
 {
-    memcpy(user_from_name,uname,32);
+    memcpy(user_from_name,frname,32);
+    memcpy(user_to_name,toname,32);
     memcpy(now_time,ntime,19);
-    user_from_name[32]=0;
     now_time[19]=0;
 }
 void ServerToClientText::get_string(char* s)
 {
     ServerToClientBase::get_string(s);
     memcpy(s+8,user_from_name,32);
-    memcpy(s+40,now_time,19);
+    memcpy(s+40,user_to_name,32);
+    memcpy(s+72,now_time,19);
 }
 char* ServerToClientText::get_user_from_name()
 {
     return user_from_name;
+}
+char* ServerToClientText::get_user_to_name()
+{
+    return user_to_name;
 }
 char* ServerToClientText::get_now_time()
 {
@@ -135,7 +143,8 @@ void ServerToClientText::set_string(const PacketHead& ph,const char* s)
     ServerToClientBase::set_string(ph,s);
     memcpy(user_from_name,s,32);
     user_from_name[32]=0;  
-    memcpy(now_time,s+32,19);
+    memcpy(user_to_name,s+32,32);
+    memcpy(now_time,s+64,19);
     now_time[19]=0;
 }  
 /*ServerToClientTextSimpleText*/
@@ -143,9 +152,9 @@ ServerToClientTextSimpleText::ServerToClientTextSimpleText():ServerToClientText(
 {
     simple_text_contain=NULL;
 }
-ServerToClientTextSimpleText::ServerToClientTextSimpleText(const PacketHead& ph,const char*uname,const char*ntime,const char*scontain):ServerToClientText(ph,uname,ntime)
+ServerToClientTextSimpleText::ServerToClientTextSimpleText(const PacketHead& ph,const char*uname,const char*ntime,const char*scontain):ServerToClientText(ph,frname,toname,ntime)
 {
-    text_length=ph.get_length()-32-19;
+    text_length=ph.get_length()-32-19-32;
     simple_text_contain=new char[text_length+1];
     memcpy(simple_text_contain,scontain,text_length);
     simple_text_contain[text_length]=0;
@@ -157,7 +166,7 @@ ServerToClientTextSimpleText::~ServerToClientTextSimpleText()
 void ServerToClientTextSimpleText::get_string(char* s)
 {
     ServerToClientText::get_string(s);
-    memcpy(s+8+32+19,simple_text_contain,text_length);
+    memcpy(s+8+32+19+32,simple_text_contain,text_length);
 }
 char* ServerToClientTextSimpleText::get_simple_text_contain()
 {
@@ -172,14 +181,14 @@ void ServerToClientTextSimpleText::set_string(const PacketHead& ph,const char* s
     if(simple_text_contain!=NULL)
         delete[] simple_text_contain;
     ServerToClientText::set_string(ph,s);
-    text_length=ph.get_length()-32-19;
+    text_length=ph.get_length()-32-19-32;
     simple_text_contain=new char[text_length+1];
-    memcpy(simple_text_contain,s+19+32,text_length);
+    memcpy(simple_text_contain,s+19+32+32,text_length);
     simple_text_contain[text_length]=0;   
 }  
 /*ServerToClientTextFileInfo*/
 ServerToClientTextFileInfo::ServerToClientTextFileInfo():ServerToClientText(){}
-ServerToClientTextFileInfo::ServerToClientTextFileInfo(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey):ServerToClientText(ph,uname,ntime)
+ServerToClientTextFileInfo::ServerToClientTextFileInfo(const PacketHead& ph,const char*uname,const char*ntime,const char*frname,const char* toname,const unsigned int fkey):ServerToClientText(ph,frname,toname,ntime)
 {
     memcpy(file_name,fname,64);
     file_name[64]=0;
@@ -189,8 +198,8 @@ void ServerToClientTextFileInfo::get_string(char* s)
 {
     int tmpi=htonl(file_key);
     ServerToClientText::get_string(s);
-    memcpy(s+8+32+19,file_name,64);
-    memcpy(s+8+32+19+64,(char*)(&tmpi),4);   
+    memcpy(s+8+32+19+32,file_name,64);
+    memcpy(s+8+32+19+64+32,(char*)(&tmpi),4);   
 }
 char* ServerToClientTextFileInfo::get_file_name()
 {
@@ -203,19 +212,19 @@ unsigned int ServerToClientTextFileInfo::get_file_key()
 void ServerToClientTextFileInfo::set_string(const PacketHead& ph,const char* s)
 {
     ServerToClientText::set_string(ph,s);
-    memcpy(file_name,s+19+32,64);
+    memcpy(file_name,s+19+32+32,64);
     file_name[64]=0; 
-    file_key=ntohs((*((unsigned int*)(s+19+32+64)))); 
+    file_key=ntohs((*((unsigned int*)(s+19+32+64+32)))); 
 } 
 /*ServerToClientTextFileContain*/
 ServerToClientTextFileContain::ServerToClientTextFileContain():ServerToClientTextFileInfo()
 {
     file_contain=NULL;
 }
-ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey,const char* fcontain):
-                                ServerToClientTextFileInfo(ph,uname,ntime,fname,fkey)
+ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*fname,const unsigned int fkey,const char* fcontain):
+                                ServerToClientTextFileInfo(ph,frname,toname,ntime,fname,fkey)
 {
-    text_length=ph.get_length()-32-19-64-4;
+    text_length=ph.get_length()-32-19-64-4-32;
     file_contain=new char[text_length+1];
     memcpy(file_contain,fcontain,text_length);
     file_contain[text_length]=0;
@@ -223,12 +232,12 @@ ServerToClientTextFileContain::ServerToClientTextFileContain(const PacketHead& p
 ServerToClientTextFileContain::~ServerToClientTextFileContain()
 {
     delete[] file_contain;
-    printf("delete ok\n");
+    //printf("delete ok\n");
 }
 void ServerToClientTextFileContain::get_string(char* s)
 {
     ServerToClientTextFileInfo::get_string(s);
-    memcpy(s+8+32+19+64+4,file_contain,text_length);
+    memcpy(s+8+32+19+64+4+32,file_contain,text_length);
 }
 char* ServerToClientTextFileContain::get_file_contain()
 {
@@ -242,9 +251,9 @@ void ServerToClientTextFileContain::set_string(const PacketHead& ph,const char* 
 {
     if(file_contain!=NULL)
         delete[] file_contain;
-    text_length=ph.get_length()-32-19-64-4;
+    text_length=ph.get_length()-32-19-64-4-32;
     ServerToClientTextFileInfo::set_string(ph,s);
-    memcpy(file_contain,s+32+19+64+4,text_length);
+    memcpy(file_contain,s+32+19+64+4+32,text_length);
     file_contain[text_length]=0;
 }  
 /*ServerToClientUserSetUpdate*/
@@ -287,12 +296,3 @@ void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
     user_set_data[ulength]=0;   
 } 
 //TODO
-int main()
-{    //for test
-     printf("test:\n");
-     //PacketHead ph;
-     //ph.set_length(32+19+4+4+64);
-     //ServerToClientBase* cb=new ServerToClientTextFileContain(ph,n,t,f,fkey,fcontain);
-     //delete cb;
-     return 1;
-}

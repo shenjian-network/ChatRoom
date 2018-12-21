@@ -278,24 +278,31 @@ void ClientToServerTextAskForFile::set_string(const PacketHead& ph,const char* s
 } 
 /*ClientToServerTextAskForTexts*/
 ClientToServerTextAskForTexts::ClientToServerTextAskForTexts():ClientToServerBase(){}
-ClientToServerTextAskForTexts::ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum):ClientToServerBase(ph)
+ClientToServerTextAskForTexts::ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum,const char* ouser):ClientToServerBase(ph)
 {
     list_num=lnum;
+    memcpy(op_user,ouser,32);
 }
 void ClientToServerTextAskForTexts::get_string(char* s)
 {
     int tmpi=htonl(list_num);
     ClientToServerBase::get_string(s);
-    memcpy(s+8,(char*)(&tmpi),4);       
+    memcpy(s+8,(char*)(&tmpi),4);    
+    memcpy(s+12,op_user,32);   
 }
 unsigned int ClientToServerTextAskForTexts::get_list_num()
 {
     return list_num;
 }
+char* ClientToServerTextAskForTexts::get_op_user()
+{
+    return op_user;
+}
 void ClientToServerTextAskForTexts::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    list_num=ntohs((*((unsigned int*)s)));    
+    list_num=ntohs((*((unsigned int*)s)));   
+    memcpy(op_user,(s+4),32); 
 } 
 /*ClientToServerUserSetUpdate*/
 ClientToServerUserSetUpdate::ClientToServerUserSetUpdate():ClientToServerBase()
