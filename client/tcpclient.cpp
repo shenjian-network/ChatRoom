@@ -584,6 +584,7 @@ void TcpClient::on_loginBtn_clicked()
     delete[] tmpStr;
 
     this->username = username;
+    this->password = password;
 }
 
 

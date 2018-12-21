@@ -136,6 +136,7 @@ private:
     QTime time;
 
     QString username;
+    QString password;
     QString ip;
     unsigned short port;
 
