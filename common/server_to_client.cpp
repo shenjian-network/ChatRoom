@@ -152,7 +152,7 @@ ServerToClientTextSimpleText::ServerToClientTextSimpleText():ServerToClientText(
 {
     simple_text_contain=NULL;
 }
-ServerToClientTextSimpleText::ServerToClientTextSimpleText(const PacketHead& ph,const char*uname,const char*ntime,const char*scontain):ServerToClientText(ph,frname,toname,ntime)
+ServerToClientTextSimpleText::ServerToClientTextSimpleText(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*scontain):ServerToClientText(ph,frname,toname,ntime)
 {
     text_length=ph.get_length()-32-19-32;
     simple_text_contain=new char[text_length+1];
@@ -188,7 +188,7 @@ void ServerToClientTextSimpleText::set_string(const PacketHead& ph,const char* s
 }  
 /*ServerToClientTextFileInfo*/
 ServerToClientTextFileInfo::ServerToClientTextFileInfo():ServerToClientText(){}
-ServerToClientTextFileInfo::ServerToClientTextFileInfo(const PacketHead& ph,const char*uname,const char*ntime,const char*frname,const char* toname,const unsigned int fkey):ServerToClientText(ph,frname,toname,ntime)
+ServerToClientTextFileInfo::ServerToClientTextFileInfo(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*fname,const unsigned int fkey):ServerToClientText(ph,frname,toname,ntime)
 {
     memcpy(file_name,fname,64);
     file_name[64]=0;
