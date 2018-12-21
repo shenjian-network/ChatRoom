@@ -970,11 +970,14 @@ void TcpClient::readyRead(){
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_INFO;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
+                            /*
+                                这个现在已经被notify替代了，相应的状态也不存在了
                             case PacketHead::kS2CTextFileContain:
                                 //文本内容包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
+                            */
                             case PacketHead::kS2CTextAskForClr:
                                 //清屏，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 cls();
@@ -1016,18 +1019,22 @@ void TcpClient::readyRead(){
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
-            case READ_SERVER_TO_CLIENT_TEXT_FILE_INFO://收到文件相关信息，将相应信息放入报头，然后显示文件信息
+            case READ_SERVER_TO_CLIENT_TEXT_FILE_INFO://收到文件相关信息，将相应信息放入报头，然后显示文件信息,这一步只有回看的时候收到
                 my_server_to_client_file_info.set_string(my_packet_head, set_byte_array.constData());
                 showFileInfo();
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
+            /*
+            这一步不需要了，被notify包所取代
             case READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN://收到文件内容信息，将相应信息放入报头，然后进行下载操作
                 my_server_to_client_text_file_contain.set_string(my_packet_head, set_byte_array.constData());
                 writeFileContain();
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
+            */
+            
             case READ_SERVER_TO_CLIENT_USER_SET_UPDATE://收到设置用户信息，将相应信息放入报头，然后做相应的设置操作
                 my_server_to_client_user_set_update.set_string(my_packet_head, set_byte_array.constData());
                 setConfig();
