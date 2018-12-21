@@ -334,6 +334,75 @@ void ClientToServerUserSetUpdate::set_string(const PacketHead& ph,const char* s)
     memcpy(user_set_data,s,ph.get_length()); 
     user_set_data[ph.get_length()]=0; 
 }  
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~分割分割~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*SenderToReceiverFileNotify*/
+SenderToReceiverFileNotify::SenderToReceiverFileNotify():ClientToServerBase(){}
+SenderToReceiverFileNotify::SenderToReceiverFileNotify(const PacketHead& ph,const char* sn,const char* rn,const char* fn,unsigned int fs):ClientToServerBase(ph)
+{
+    memcpy(sender_name,sn,32);
+    memcpy(receiver_name,rn,32);
+    memcpy(file_name,fn,64);
+    file_size=fs;
+}
+void SenderToReceiverFileNotify::get_string(char* s)
+{
+    int tmpi=htonl(file_size);
+    ClientToServerBase::get_string(s);
+    memcpy(s+8,sender_name,32);
+    memcpy(s+40,receiver_name,32);
+    memcpy(s+72,file_name,64);
+    memcpy(s+72+64,(char*)(&tmpi),4);        
+}
+char* SenderToReceiverFileNotify::get_sender_name()
+{
+    return sender_name;
+}
+char* SenderToReceiverFileNotify::get_receiver_name()
+{
+    return receiver_name;
+}
+char* SenderToReceiverFileNotify::get_file_name()
+{
+    return file_name;
+}
+unsigned int SenderToReceiverFileNotify::get_file_size()
+{
+    return file_size;
+}
+unsigned int SenderToReceiverFileNotify::get_block_num()
+{
+    return file_size;
+}
+void SenderToReceiverFileNotify::set_string(const PacketHead& ph,const char* s)
+{
+    ClientToServerBase::set_string(ph,s);
+    memcpy(sender_name,s,32);
+    memcpy(receiver_name,s+32,32);
+    memcpy(file_name,s+64,64);
+    file_size=ntohs((*((unsigned int*)(s+128))));
+}
+/*SenderToReceiverFileData*/
+SenderToReceiverFileData::SenderToReceiverFileData():SenderToReceiverFileNotify(){}
+SenderToReceiverFileData::SenderToReceiverFileData(const PacketHead& ph,const char* sn,const char* rn,const char* fn,unsigned int bn,const char* fc): \
+                                                SenderToReceiverFileNotify(ph,sn,rn,fn,bn)
+{
+    memcpy(file_contain,fc,FILEBUFFERSIZE);
+}
+char* SenderToReceiverFileData::get_file_contain()
+{
+    return file_contain;
+}
+void SenderToReceiverFileData::get_string(char* s)
+{
+    SenderToReceiverFileNotify::get_string(s);
+    memcpy(s+140,file_contain,FILEBUFFERSIZE);
+}
+void SenderToReceiverFileData::set_string(const PacketHead& ph,const char* s)
+{
+    SenderToReceiverFileNotify::set_string(ph,s);
+    memcpy(file_contain,s+132,FILEBUFFERSIZE);
+}
+
 //TODO
 // int main()
 // {     //for test

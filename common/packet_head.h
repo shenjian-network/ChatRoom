@@ -9,11 +9,13 @@
 #include<string.h>
 #include<iostream>
 #include<string>
+#include "xmllog.h"
+const int FILEBUFFERSIZE=3964;
 /*为了方便统一，因而只有getString和toString才包括网络序和主机序的转化，其他均为正常用法*/
 class PacketHead{
 public:
     PacketHead();
-    PacketHead(const unsigned short s1,const unsigned short s2,const unsigned int i1);
+    PacketHead(const unsigned short,const unsigned short,const unsigned int);
     /*set_string可以将网络序的规范字符串转为该类（主机序）内部存储形式*/
     /*get_string可以将该类内部存储（主机序）改为网络序的规范字符串*/
     /*其他均为主机序的自定义设置和获取*/
@@ -64,6 +66,19 @@ public:
     static const unsigned short kS2CTextFileContain=0x2;//文件内容
     static const unsigned short kS2CTextAskForClr=0x3;//清屏
     static const unsigned short kS2CUserSetUpdate=0x0;//发送用户设置
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ADD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~一对一在线文件传输~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*packet_type*/
+    static const unsigned short kC2CFileNotify=0x14;//在线文件通知包
+    static const unsigned short kC2CFileData=0x15;//在线文件数据包
+    /*function_type*/
+    static const unsigned short kC2CFileNotifyRequest=0x0;//请求发送
+    static const unsigned short kC2CFileNotifyCancelSend=0x1;//取消发送
+    static const unsigned short kC2CFileNotifyAccept=0x2;//同意接收
+    static const unsigned short kC2CFileNotifyCancelRecv=0x3;//取消接收
+    static const unsigned short kC2CFileDataSend=0x0;//发送数据信息
 private:
     unsigned short packet_type;
     unsigned short function_type;
