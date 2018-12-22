@@ -153,7 +153,7 @@ void ClientToServerTextToUsers::set_string(const PacketHead& ph,const char* s)
     if(text_info!=NULL)
         delete[] text_info;
     ClientToServerBase::set_string(ph,s);
-    user_num=ntohs((*((unsigned int*)s))); 
+    user_num=ntohl((*((unsigned int*)s))); 
     text_length=ph.get_length()-user_num*32-4;
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
@@ -241,7 +241,7 @@ void ClientToServerTextFileToUsers::set_string(const PacketHead& ph,const char* 
     if(text_info!=NULL)
         delete[] text_info;
     ClientToServerBase::set_string(ph,s);
-    user_num=ntohs((*((unsigned int*)s))); 
+    user_num=ntohl((*((unsigned int*)s))); 
     text_length=ph.get_length()-user_num*32-4-64;
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
@@ -274,7 +274,7 @@ unsigned int ClientToServerTextAskForFile::get_file_key()
 void ClientToServerTextAskForFile::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    file_key=ntohs((*((unsigned int*)s))); 
+    file_key=ntohl((*((unsigned int*)s))); 
 } 
 /*ClientToServerTextAskForTexts*/
 ClientToServerTextAskForTexts::ClientToServerTextAskForTexts():ClientToServerBase(){}
@@ -301,7 +301,7 @@ char* ClientToServerTextAskForTexts::get_op_user()
 void ClientToServerTextAskForTexts::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    list_num=ntohs((*((unsigned int*)s)));   
+    list_num=ntohl((*((unsigned int*)s)));   
     memcpy(op_user,(s+4),32); 
 } 
 /*ClientToServerUserSetUpdate*/
@@ -386,7 +386,7 @@ void SenderToReceiverFileNotify::set_string(const PacketHead& ph,const char* s)
     memcpy(sender_name,s,32);
     memcpy(receiver_name,s+32,32);
     memcpy(file_name,s+64,64);
-    file_size=ntohs((*((unsigned int*)(s+128))));
+    file_size=ntohl((*((unsigned int*)(s+128))));
 }
 /*SenderToReceiverFileData*/
 SenderToReceiverFileData::SenderToReceiverFileData():SenderToReceiverFileNotify(){}
