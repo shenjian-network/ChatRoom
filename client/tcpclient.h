@@ -5,6 +5,7 @@
 #include <QTcpSocket>
 #include <QListWidget>
 #include <QTime>
+#include <map>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
@@ -138,8 +139,9 @@ private:
     QString username;
     QString password;
     QString ip;
+    std::map<std::string, std::string> configData;
     unsigned short port;
-
+    
 };
 
 #endif // TCPCLIENT_H

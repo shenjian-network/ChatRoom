@@ -1,6 +1,7 @@
 ﻿#include "tcpclient.h"
 #include "ui_tcpclient.h"
 #include <string.h>
+#include <sstream>
 #include <QDialog>
 #include <QPushButton>
 #include <QHBoxLayout>
@@ -356,7 +357,16 @@ void TcpClient::showText(){
 
 // 设置配置 （TODO）
 void TcpClient::setConfig(){
+    std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
+    std::istringstream configDataStream(configData);
+    std::string configKey, configValue;
+    while(configDataStream >> configKey >> configValue)
+        configMap[configKey] = configValue;
 
+    //TODO
+    /*
+    根据configMap中的键值对来进行相应的设置
+    */
 }
 
 // 向用户列表中添加一项 （FINISHED)
@@ -987,10 +997,10 @@ void TcpClient::readyRead(){
                                 qDebug() << "switch kS2CText my_packet_head.get_packet_type() case lost";
                         }
                         break;
+                    //收到用户设置包，进入相应的状态
                     case PacketHead::kS2CUserSet:
-//                        current_read_state = PacketHead::kS2CUserSetUpdate;
+                        current_read_state = PacketHead::kS2CUserSetUpdate;
                         current_byte_num_to_read = my_packet_head.get_length();
-                        setConfig();
                         break;
                     default:
                         qDebug() << "switch my_packet_head.get_packet_type() case lost";
