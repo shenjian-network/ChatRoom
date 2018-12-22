@@ -1,6 +1,7 @@
 ﻿#include "tcpclient.h"
 #include "ui_tcpclient.h"
 
+#include <cstdio>
 #include <string.h>
 #include <sstream>
 #include <QDialog>
@@ -327,9 +328,61 @@ void TcpClient::chatRoomGUI(){
     chatRoomWindow->show();
 }
 
+// *****辅助函数***** //
 
+std::string QStringToString(const QString & myQstring)
+{
+    return std::string(myQstring.toLocal8Bit().constData());
+}
+
+std::string stringPadding(std::string myString, const unsigned int & len)
+{
+    myString.resize(len, 0);
+    return myString;
+}
+
+//-----------------------//
+
+//点击回看 发送回看包
+void TcpClient::askForReview(){
+    //当前框的对象，也就是要回看的人，如果所有人，则为空
+    std::string toUser;
+
+    //TODO
+    /*获得toUser*/
+
+
+
+
+
+
+    //发送配置文件包
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2SText);
+    sendPacketHead.set_function_type(PacketHead::kC2STextAskForTexts);
+
+    sendPacketHead.set_length(36);
+
+    //没有reviewLineCnt这一项
+    if(configMap.find("reviewLineCnt") == configMap.end())
+    {
+        qDebug() << "reviewLineCnt Not Exists" << endl;
+        return;
+    }
+
+    ClientToServerTextAskForTexts sendClientToServerTextAskForTexts(sendPacketHead, 
+        atoi(configMap["reviewLineCnt"].c_str()), stringPadding(toUser, 32).c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    sendClientToServerTextAskForTexts.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+}
 
 // 配置界面 （TODO）
+//下面有个确定键，点击后，会更改GUI界面，并触发槽函数sendConfig
 void TcpClient::configGUI(){
 
 }
@@ -383,6 +436,123 @@ void TcpClient::showText(){
     }
 }
 
+std::string getKey(std::string senderNameString, std::string recvNameString, std::string fileNameSting)
+{
+    return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileNameSting, 64);
+}
+
+//TODO
+void TcpClient::showFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender)
+{
+    //获得相应的fileToShow
+    std::string fileKey = getKey(senderName, recvName, fileName);
+    fileTrans fileToShow;
+    if(isSender)
+    {
+        if(sendFile.find(fileKey) == sendFile.end())
+            return;
+        fileToShow = sendFile[fileKey];
+    }
+    else
+    {
+        if(recvFile.find(fileKey) == recvFile.end())
+            return;
+        fileToShow = recvFile[fileKey];
+    }
+    
+    int perCent = 100 * FILEBUFFERSIZE * fileToShow.blockCnt / fileToShow.len;
+    //TODO
+    //GUI显示进度百分比perCent
+}
+
+//TODO
+void TcpClient::errorFileTransferring(std::string senderName, std::string recvName, std::string fileName)
+{
+    //显示已经有文件正在发送，不能在这时候发送
+}
+
+//TODO
+void TcpClient::cancelFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender)
+{
+    //显示文件已经被取消传输
+}
+
+//TODO
+void TcpClient::doneFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender)
+{
+    //显示文件传输完成
+}
+
+
+int getFileLen(const char * fileName)
+{
+    int fileLen;
+    FILE *fp;
+    fp = fopen(fileName,"rb");
+    fseek(fp, 0, SEEK_END);
+    fileLen = ftell(fp);
+    fclose(fp);
+    return fileLen;
+}
+
+//TODO
+void TcpClient::tryToSend()
+{   
+    /*
+    点击发送文件的按钮触发的事件,首先需要获得接收方用户名recvName, 文件名fileName
+    */
+    QString recvName;
+    QString fileName;
+
+
+
+
+
+
+
+    std::string senderNameString = QStringToString(username);
+    std::string recvNameString = QStringToString(recvName);
+    std::string fileNameString = QStringToString(fileName);
+    int fileLen = getFileLen(fileNameString.c_str());
+    
+    /*
+    首先在sendFile这个Map中查看是否存在，如果存在则说明正在发送，弹窗显示不能继续发送,
+    否则向对端发送一个请求发送包
+    */
+    std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
+    
+    if(sendFile.find(sendFileKey) == sendFile.end())
+    {
+        //Map中找不到，说明不是正在发送，可以发送，要显示发送的进度
+        FILE* fd = fopen(senderNameString.c_str(), "rb");
+        sendFile[sendFileKey] = fileTrans(fd, 0, fileLen);
+
+        showFileTransferring(senderNameString, recvNameString, fileNameString, true);
+        //给对端发请求发送包
+        PacketHead sendPacketHead;
+
+        sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
+        sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyRequest);
+
+        sendPacketHead.set_length(132);
+
+        SenderToReceiverFileNotify sendSenderToReceiverFileNotify(sendPacketHead,
+            stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+            stringPadding(fileNameString, 64).c_str(), fileLen);
+
+        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+        sendSenderToReceiverFileNotify.get_string(tmpStr);
+        socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+        delete[] tmpStr;
+    }
+    else
+    {
+        //显示文件正在发送，不能发送
+        errorFileTransferring(senderNameString, recvNameString, fileNameString);
+    }
+}
+
 //TODO
 void TcpClient::showTryToSend()
 {
@@ -390,10 +560,300 @@ void TcpClient::showTryToSend()
 
 }
 
+//TODO
+void TcpClient::acceptRecv()
+{
+    /*
+    点击文件接收按钮触发的事件,首先要获得发送方用户名senderName, 文件名称fileName,文件大小fileLen
+    */
+    QString senderName;
+    QString fileName;
+    int fileLen;
 
 
 
-// 设置配置 （TODO）
+
+
+
+    
+
+    /*
+    open本地文件，打开方式为trunc
+    然后在recvFile这个Map中增加一项，下标为发送方+接收方+文件名
+    值为fileTrans,不需要len这一项
+    */
+    std::string senderNameString = QStringToString(senderName);
+    std::string recvNameString = QStringToString(username);
+    std::string fileNameString = QStringToString(fileName);
+    FILE* fd = fopen(fileNameString.c_str(), "wb");
+
+    std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
+
+    if(recvFile.find(recvFileKey) == recvFile.end())
+        return;
+
+    recvFile[recvFileKey] = fileTrans(fd, 0, fileLen);
+    
+    /*
+    向对端发送同意接收包
+    */
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
+    sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyAccept);
+
+    sendPacketHead.set_length(132);
+
+    SenderToReceiverFileNotify recvSenderToReceiverFileNotify(sendPacketHead,
+        stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+        stringPadding(fileNameString, 64).c_str(), 0);
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    recvSenderToReceiverFileNotify.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+}
+
+
+void TcpClient::sendFileData()
+{
+    /*Sender收到请求发送包后，从中读取块，然后发送*/
+    /*
+    注意：由于common包没有处理尾0的情况，因此username只允许到31
+    */
+    std::string senderNameString = std::string(my_sender_to_receiver_file_notify.get_sender_name());
+    std::string recvNameString = std::string(my_sender_to_receiver_file_notify.get_receiver_name());
+    std::string fileNameString = std::string(my_sender_to_receiver_file_notify.get_file_name());
+    unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
+
+    std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
+
+    if(sendFile.find(sendFileKey) == sendFile.end())
+        return;
+    
+    auto myFileTrans = sendFile[sendFileKey];
+
+    char* fileContain = new char [FILEBUFFERSIZE];
+    unsigned int readSize = fread(fileContain, 1, FILEBUFFERSIZE, myFileTrans.fd);
+
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2CFileData);
+    sendPacketHead.set_length(kFileDataLen);
+
+    if(readSize < FILEBUFFERSIZE)//读到了文件结尾
+    {
+        blockCnt = 0xFFFF;
+        fclose(myFileTrans.fd);
+        sendFile.erase(sendFileKey);
+        doneFileTransferring(senderNameString, recvNameString, fileNameString, true);
+    }
+    else   
+        showFileTransferring(senderNameString, recvNameString, fileNameString, true);
+
+    SenderToReceiverFileData senderToReceiverFileData(sendPacketHead,
+        stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+        stringPadding(fileNameString, 64).c_str(), blockCnt, fileContain);
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    senderToReceiverFileData.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+    delete[] fileContain;
+}
+
+void TcpClient::writeDataAndRequest()
+{
+    /*rec从包中获得数据并向send发送新的请求*/
+    std::string senderNameString = std::string(my_sender_to_receiver_file_data.get_sender_name());
+    std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
+    std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
+    unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
+    
+    std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
+
+    if(recvFile.find(recvFileKey) == recvFile.end())
+        return;
+
+    auto myFileTrans = recvFile[recvFileKey];
+
+    if(blockCnt != 0xFFFF)
+    {
+        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, FILEBUFFERSIZE, myFileTrans.fd);
+
+        showFileTransferring(senderNameString, recvNameString, fileNameString, false);
+        /*
+        向对端发送请求接收包
+        */
+        ++blockCnt;
+        recvFile[recvFileKey].blockCnt = blockCnt;
+        PacketHead sendPacketHead;
+
+        sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
+        sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyAccept);
+
+        sendPacketHead.set_length(132);
+
+        SenderToReceiverFileNotify recvSenderToReceiverFileNotify(sendPacketHead,
+            stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+            stringPadding(fileNameString, 64).c_str(), blockCnt);
+
+        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+        recvSenderToReceiverFileNotify.get_string(tmpStr);
+        socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+        delete[] tmpStr;
+    }
+    else
+    {
+        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, 
+            myFileTrans.len - myFileTrans.blockCnt * FILEBUFFERSIZE, myFileTrans.fd);
+        
+        fclose(myFileTrans.fd);
+        recvFile.erase(recvFileKey);
+        doneFileTransferring(senderNameString, recvNameString, fileNameString, false);
+    }
+}
+
+//主动取消发送
+void TcpClient::cancelSendFileDataActive()
+{
+    //需要知道recvName和fileName
+    QString recvName;
+    QString fileName;
+
+    //TODO
+
+
+
+
+
+
+
+    std::string senderNameString = QStringToString(username);
+    std::string recvNameString = QStringToString(recvName);
+    std::string fileNameString = QStringToString(fileName);
+
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
+
+    std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
+    
+    if(sendFile.find(sendFileKey) == sendFile.end())
+        return;
+    
+    fclose(sendFile[sendFileKey].fd);
+    sendFile.erase(sendFileKey);
+}
+
+//主动取消接收
+void TcpClient::cancelRecvFileDataActive()
+{
+    //需要知道senderName和fileName
+    QString senderName;
+    QString fileName;
+    //TODO
+
+
+
+
+
+
+
+    std::string senderNameString = QStringToString(senderName);
+    std::string recvNameString = QStringToString(username);
+    std::string fileNameString = QStringToString(fileName);
+
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, false);//GUI显示取消发送
+
+    std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
+
+    if(recvFile.find(recvFileKey) == recvFile.end())
+        return;
+
+    fclose(recvFile[recvFileKey].fd);
+    recvFile.erase(recvFileKey);
+}
+
+//被动取消发送
+void TcpClient::cancelSendFileDataPassive()
+{
+    std::string senderNameString = std::string(my_sender_to_receiver_file_data.get_sender_name());
+    std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
+    std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
+
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
+
+    std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
+    
+    if(sendFile.find(sendFileKey) == sendFile.end())
+        return;
+    
+    fclose(sendFile[sendFileKey].fd);
+    sendFile.erase(sendFileKey);
+}
+
+
+//被动取消接收
+void TcpClient::cancelRecvFileDataPassive()
+{
+    std::string senderNameString = std::string(my_sender_to_receiver_file_data.get_sender_name());
+    std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
+    std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
+
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, false);//GUI显示取消发送
+
+    std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
+
+    if(recvFile.find(recvFileKey) == recvFile.end())
+        return;
+
+    fclose(recvFile[recvFileKey].fd);
+    recvFile.erase(recvFileKey);
+}
+
+
+std::string TcpClient::singleConfigString(std::string configKey)
+{
+    return configKey + ' ' + configMap[configKey] + '\n';
+}
+
+//将config转换成string
+std::string TcpClient::configString()
+{
+    std::string ret;
+    ret += singleConfigString("reviewLineCnt");
+    //TODO
+    /*增加其他的配置项*/
+
+
+
+    return ret;
+}
+
+//发送配置更新包
+void TcpClient::sendConfig()
+{
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2SUserSet);
+    sendPacketHead.set_function_type(PacketHead::kC2SUserSetUpdate);
+
+    std::string myConfigString = configString();
+
+    sendPacketHead.set_length(myConfigString.length());
+
+    ClientToServerUserSetUpdate sendClientToServerUserSetUpdate(sendPacketHead, myConfigString.c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    sendClientToServerUserSetUpdate.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+}
+
+//根据初始发送配置包的内容进行设置配置 （TODO）
 void TcpClient::setConfig(){
     std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
     std::istringstream configDataStream(configData);
@@ -651,23 +1111,6 @@ void TcpClient::InitRightLayout(){
     rightStackLayout->addWidget(right);
 }
 
-
-
-// *****辅助函数***** //
-
-std::string QStringToString(const QString & myQstring)
-{
-    return std::string(myQstring.toLocal8Bit().constData());
-}
-
-std::string stringPadding(std::string myString, const unsigned int & len)
-{
-    myString.resize(len, 0);
-    return myString;
-}
-
-
-
 /********************slots*********************************/
 
 // 登录按钮（FINISHED）
@@ -712,7 +1155,7 @@ void TcpClient::on_loginBtn_clicked()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
@@ -764,7 +1207,7 @@ void TcpClient::on_signupBtn_clicked()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 }
@@ -951,7 +1394,7 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
@@ -1224,6 +1667,42 @@ void TcpClient::readyRead(){
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
+
+            case READ_C2C_FILE_NOTIFY_REQUEST://recv收到请求用户发送包
+                my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
+                showTryToSend();
+                current_read_state = READ_PACKET_HEAD;
+                current_byte_num_to_read = kPacketHeadLen;
+                break;
+            
+            case READ_C2C_FILE_NOTIFY_ACCEPT://sender收到同意请求包
+                my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
+                sendFileData();//向recv发送数据包
+                current_read_state = READ_PACKET_HEAD;
+                current_byte_num_to_read = kPacketHeadLen;
+                break;
+
+            case READ_C2C_FILE_DATA://recv收到数据包
+                my_sender_to_receiver_file_data.set_string(my_packet_head, set_byte_array.constData());
+                writeDataAndRequest();//写数据并发送请求用户发送包
+                current_read_state = READ_PACKET_HEAD;
+                current_byte_num_to_read = kPacketHeadLen;
+                break;
+
+            case READ_C2C_FILE_NOTIFY_CANCEL_RECV://send收到取消接收包
+                my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
+                cancelSendFileDataPassive();//取消发送
+                current_read_state = READ_PACKET_HEAD;
+                current_byte_num_to_read = kPacketHeadLen;
+                break;
+
+            case READ_C2C_FILE_NOTIFY_CANCEL_SEND://recv收到取消发送包
+                my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
+                cancelRecvFileDataPassive();//取消接收
+                current_read_state = READ_PACKET_HEAD;
+                current_byte_num_to_read = kPacketHeadLen;
+                break;
+            
             default:
                 qDebug() << "switch current_read_state case lost";
         }
