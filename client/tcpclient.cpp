@@ -751,8 +751,6 @@ void TcpClient::cancelSendFileDataActive()
 
 
 
-
-
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
     std::string fileNameString = QStringToString(fileName);
@@ -763,6 +761,27 @@ void TcpClient::cancelSendFileDataActive()
     
     if(sendFile.find(sendFileKey) == sendFile.end())
         return;
+    
+    /*向对面发送取消发送包*/
+
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
+    sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyCancelSend);  //注册
+    sendPacketHead.set_length(132);
+    int fileLen = sendFile[sendFileKey].len;
+
+    SenderToReceiverFileNotify sendSenderToReceiverFileNotify(sendPacketHead,
+            stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+            stringPadding(fileNameString, 64).c_str(), fileLen);
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
+    sendSenderToReceiverFileNotify.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+    
+    /*发送完成*/
     
     fclose(sendFile[sendFileKey].fd);
     sendFile.erase(sendFileKey);
@@ -793,7 +812,30 @@ void TcpClient::cancelRecvFileDataActive()
     if(recvFile.find(recvFileKey) == recvFile.end())
         return;
 
+    //TODO
+    /*向对面发送取消接收包*/
+
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
+    sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyCancelRecv);  //注册
+    sendPacketHead.set_length(132);
+    int fileLen = recvFile[recvFileKey].len;
+
+    SenderToReceiverFileNotify sendSenderToReceiverFileNotify(sendPacketHead,
+            stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
+            stringPadding(fileNameString, 64).c_str(), fileLen);
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
+    sendSenderToReceiverFileNotify.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+
+    /*发送完成*/
+
     fclose(recvFile[recvFileKey].fd);
+    remove(recvFile[revFileKey].fd);
     recvFile.erase(recvFileKey);
 }
 
@@ -831,6 +873,7 @@ void TcpClient::cancelRecvFileDataPassive()
         return;
 
     fclose(recvFile[recvFileKey].fd);
+    remove(recvFile[revFileKey].fd);
     recvFile.erase(recvFileKey);
 }
 
@@ -1709,9 +1752,7 @@ void TcpClient::readyRead(){
                 writeDataAndRequest();//写数据并发送请求用户发送包
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
-                break;    void on_configAckBtn_clicked();
-
-                void on_configCancelBtn_clicked();
+                break;
 
             case READ_C2C_FILE_NOTIFY_CANCEL_RECV://send收到取消接收包
                 my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
