@@ -5,10 +5,14 @@
 #include <QTcpSocket>
 #include <QListWidget>
 #include <QTime>
+#include <QVBoxLayout>
+#include <QStackedLayout>
 #include <map>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
+#include "clickablelabel.h"
+
 
 namespace Ui {
 class TcpClient;
@@ -25,11 +29,11 @@ enum ReadState
     READ_SERVER_TO_CLIENT_TEXT_SIMPLE_TEXT,
     READ_SERVER_TO_CLIENT_TEXT_FILE_INFO,
     READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN,
-    READ_SERVER_TO_CLIENT_USER_SET_UPDATE，
-    READ_C2C_FILE_NOTIFY_REQUEST，
-    READ_C2C_FILE_NOTIFY_CANCEL_SEND，
-    READ_C2C_FILE_NOTIFY_ACCEPT，
-    READ_C2C_FILE_NOTIFY_CANCEL_RECV，
+    READ_SERVER_TO_CLIENT_USER_SET_UPDATE,
+    READ_C2C_FILE_NOTIFY_REQUEST,
+    READ_C2C_FILE_NOTIFY_CANCEL_SEND,
+    READ_C2C_FILE_NOTIFY_ACCEPT,
+    READ_C2C_FILE_NOTIFY_CANCEL_RECV,
     READ_C2C_FILE_DATA
 };
 
@@ -62,7 +66,7 @@ public:
 
     void reportSuccess();
 
-    void chatRoomGUI();
+    void chatRoomGUI();  //聊天室新窗口
 
     void configGUI();
 
@@ -99,6 +103,7 @@ public:
 
     void tryToSend();
 
+    void InitRightLayout();
     void showTryToSend();
 
     void sendFileData();//发送数据包
@@ -151,6 +156,9 @@ private slots:
     // 登录界面，显示密码
     void on_showPwdCheckBox_stateChanged();
 
+    // 点击用户触发函数
+    void userLabelClicked();
+
     // 更新时间
     void timeUpdate();
 
@@ -179,9 +187,15 @@ private:
     QString ip;
     std::map<std::string, std::string> configMap;
     std::map<std::string, fileTrans> sendFile;
-    srd::map<std::string, fileTrans> recvFile;
+    std::map<std::string, fileTrans> recvFile;
     unsigned short port;
 
+    ClickableLabel * preChatter; // 上一个与你对话的用户
+    QLabel * curChatter; // 现在与你对话的用户
+    QStackedLayout * rightStackLayout; // 现在与你对话的用户的聊天窗
+    QHBoxLayout * chatRoomMainLayout;
+    QMap <QString, int> user2Index;
+    int curIndex;
 };
 
 #endif // TCPCLIENT_H

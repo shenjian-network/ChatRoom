@@ -30,13 +30,15 @@ SOURCES += \
         tcpclient.cpp \
     common/client_to_server.cpp \
     common/packet_head.cpp \
-    common/server_to_client.cpp
+    common/server_to_client.cpp \
+    clickablelabel.cpp
 
 HEADERS += \
         tcpclient.h \
     common/client_to_server.h \
     common/packet_head.h \
-    common/server_to_client.h
+    common/server_to_client.h \
+    clickablelabel.h
 
 FORMS += \
         tcpclient.ui
