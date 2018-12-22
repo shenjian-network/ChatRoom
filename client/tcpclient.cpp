@@ -628,6 +628,8 @@ void TcpClient::writeDataAndRequest()
 
     if(blockCnt != 0xFFFF)
     {
+        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, FILEBUFFERSIZE, myFileTrans.fd);
+
         showFileTransferring(senderNameString, recvNameString, fileNameString, false);
         /*
         向对端发送请求接收包
@@ -653,6 +655,9 @@ void TcpClient::writeDataAndRequest()
     }
     else
     {
+        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, 
+            myFileTrans.len - myFileTrans.blockCnt * FILEBUFFERSIZE, myFileTrans.fd);
+        
         fclose(myFileTrans.fd);
         recvFile.erase(recvFileKey);
         doneFileTransferring(senderNameString, recvNameString, fileNameString, false);
