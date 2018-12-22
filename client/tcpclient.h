@@ -241,6 +241,7 @@ private:
     QProgressDialog* pdlg;
 
     QString senderName;
+    QString recvName;
     QString fileName;
     int fileLen;
 };

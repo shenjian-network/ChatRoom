@@ -35,6 +35,8 @@ TcpClient::TcpClient(QWidget *parent) :
     changePwdWindow = nullptr;
     userList = nullptr;
     preChatter = nullptr;
+    pdlg = nullptr;
+    fileWindow = nullptr;
 
     curChatter = new QLabel;
 
@@ -534,7 +536,16 @@ void TcpClient::cancelFileTransferring(std::string senderName, std::string recvN
 {
     //显示文件已经被取消传输
     errorGUI("传输取消");
-    pdlg->close();
+    if(pdlg){
+        pdlg->close();
+        delete pdlg;
+        pdlg = nullptr;
+    }
+    if(fileWindow){
+        fileWindow->close();
+        delete fileWindow;
+        fileWindow = nullptr;
+    }
 }
 
 //TODO
@@ -627,6 +638,7 @@ void TcpClient::showTryToSend()
     senderName = my_sender_to_receiver_file_notify.get_sender_name();
     fileName = my_sender_to_receiver_file_notify.get_file_name();
     fileLen = my_sender_to_receiver_file_notify.get_file_size();
+    recvName = my_sender_to_receiver_file_notify.get_receiver_name();
 
     fileWindow = new QWidget;
 
@@ -808,13 +820,7 @@ void TcpClient::writeDataAndRequest()
 //主动取消发送
 void TcpClient::cancelSendFileDataActive()
 {
-    fileWindow->close();
-    //需要知道recvName和fileName
-    QString recvName;
-    QString fileName;
-
     //TODO
-
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
     std::string fileNameString = QStringToString(fileName);
