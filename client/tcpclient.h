@@ -88,6 +88,18 @@ public:
     //将文件内容从包写入文件，注意在调用该函数前，文件内容已经被写入了ServerToClientTextFileContain包，因此这部分只要显示下载文件完成等即可
     void writeFileContain();
 
+    //发送请求回看包
+    void askForReview();
+
+    //单个配置对应的一行String
+    std::string singleConfigString(std::string configKey);
+
+    //将config转换成string输出
+    std::string configString();
+
+    //向server发送配置包
+    void sendConfig();
+
     // read config
     void setConfig();
 

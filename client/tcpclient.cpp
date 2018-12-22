@@ -330,13 +330,6 @@ void TcpClient::chatRoomGUI(){
     chatRoomWindow->show();
 }
 
-
-
-// 配置界面 （TODO）
-void TcpClient::configGUI(){
-    // 到底有哪些配置?
-}
-
 // *****辅助函数***** //
 
 std::string QStringToString(const QString & myQstring)
@@ -348,6 +341,57 @@ std::string stringPadding(std::string myString, const unsigned int & len)
 {
     myString.resize(len, 0);
     return myString;
+}
+
+//-----------------------//
+
+//点击回看 发送回看包
+void TcpClient::askForReview(){
+    //当前框的对象，也就是要回看的人，如果所有人，则为空
+    std::string toUser;
+
+    //TODO
+    /*获得toUser*/
+
+
+
+
+
+
+    //发送配置文件包
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2SText);
+    sendPacketHead.set_function_type(PacketHead::kC2STextAskForTexts);
+
+    sendPacketHead.set_length(36);
+
+    //没有reviewLineCnt这一项
+    if(configMap.find("reviewLineCnt") == configMap.end())
+    {
+        qDebug() << "reviewLineCnt Not Exists" << endl;
+        return;
+    }
+
+    ClientToServerTextAskForTexts sendClientToServerTextAskForTexts(sendPacketHead, 
+        atoi(configMap["reviewLineCnt"].c_str()), stringPadding(toUser, 32).c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    sendClientToServerTextAskForTexts.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+}
+
+// 配置界面 （TODO）
+//下面有个确定键，点击后，会更改GUI界面，并触发槽函数sendConfig
+void TcpClient::configGUI(){
+    // 到底有哪些配置?
+    
+    //TODO
+
+
+
 }
 
 
@@ -760,7 +804,47 @@ void TcpClient::cancelRecvFileDataPassive()
     recvFile.erase(recvFileKey);
 }
 
-// 设置配置 （TODO）
+
+std::string TcpClient::singleConfigString(std::string configKey)
+{
+    return configKey + ' ' + configMap[configKey] + '\n';
+}
+
+//将config转换成string
+std::string TcpClient::configString()
+{
+    std::string ret;
+    ret += singleConfigString("reviewLineCnt");
+    //TODO
+    /*增加其他的配置项*/
+
+
+
+    return ret;
+}
+
+//发送配置更新包
+void TcpClient::sendConfig()
+{
+    PacketHead sendPacketHead;
+
+    sendPacketHead.set_packet_type(PacketHead::kC2SUserSet);
+    sendPacketHead.set_function_type(PacketHead::kC2SUserSetUpdate);
+
+    std::string myConfigString = configString();
+
+    sendPacketHead.set_length(myConfigString.length());
+
+    ClientToServerUserSetUpdate sendClientToServerUserSetUpdate(sendPacketHead, myConfigString.c_str());
+
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    sendClientToServerUserSetUpdate.get_string(tmpStr);
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
+    delete[] tmpStr;
+}
+
+//根据初始发送配置包的内容进行设置配置 （TODO）
 void TcpClient::setConfig(){
     std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
     std::istringstream configDataStream(configData);
