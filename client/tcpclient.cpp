@@ -1,7 +1,7 @@
 #include "tcpclient.h"
 #include "ui_tcpclient.h"
 
-#include <cstdio>
+#include <stdio.h>
 #include <string.h>
 #include <sstream>
 #include <QDialog>
@@ -863,7 +863,7 @@ void TcpClient::cancelRecvFileDataActive()
     /*发送完成*/
 
     fclose(recvFile[recvFileKey].fd);
-    remove(recvFile[revFileKey].fd);
+    remove(fileNameString.c_str());
     recvFile.erase(recvFileKey);
 }
 
@@ -901,7 +901,7 @@ void TcpClient::cancelRecvFileDataPassive()
         return;
 
     fclose(recvFile[recvFileKey].fd);
-    remove(recvFile[revFileKey].fd);
+    remove(fileNameString.c_str());
     recvFile.erase(recvFileKey);
 }
 
