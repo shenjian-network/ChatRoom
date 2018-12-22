@@ -31,6 +31,8 @@ ServerToClientReportSuccess::ServerToClientReportSuccess(const PacketHead& ph,co
     memcpy(last_login_time,ltime,19);
     last_login_time[19]=0;
     user_num=unum;
+    if(!unum)
+        return;
     user_status=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_status[i]=new char[33];
@@ -92,7 +94,7 @@ void ServerToClientReportSuccess::set_string(const PacketHead& ph,const char* s)
 ServerToClientInform::ServerToClientInform():ServerToClientBase(){}
 ServerToClientInform::ServerToClientInform(const PacketHead& ph,const char*uname):ServerToClientBase(ph)
 {
-    memcpy(user_name,uname,32);
+    strcpy(user_name,uname);
     user_name[32]=0;
 }
 void ServerToClientInform::get_string(char* s)
@@ -107,15 +109,15 @@ char* ServerToClientInform::get_user_name()
 void ServerToClientInform::set_string(const PacketHead& ph,const char* s)
 {
     ServerToClientBase::set_string(ph,s);
-    memcpy(user_name,s,32);
+    strcpy(user_name,s);
     user_name[32]=0;
 }  
 /*ServerToClientText*/
 ServerToClientText::ServerToClientText():ServerToClientBase(){}
 ServerToClientText::ServerToClientText(const PacketHead& ph,const char*frname,const char* toname,const char*ntime):ServerToClientBase(ph)
 {
-    memcpy(user_from_name,frname,32);
-    memcpy(user_to_name,toname,32);
+    strcpy(user_from_name,frname);
+    strcpy(user_to_name,toname);
     memcpy(now_time,ntime,19);
     now_time[19]=0;
 }
@@ -141,9 +143,9 @@ char* ServerToClientText::get_now_time()
 void ServerToClientText::set_string(const PacketHead& ph,const char* s)
 {
     ServerToClientBase::set_string(ph,s);
-    memcpy(user_from_name,s,32);
+    strcpy(user_from_name,s);
     user_from_name[32]=0;  
-    memcpy(user_to_name,s+32,32);
+    strcpy(user_to_name,s+32);
     memcpy(now_time,s+64,19);
     now_time[19]=0;
 }  
@@ -190,7 +192,7 @@ void ServerToClientTextSimpleText::set_string(const PacketHead& ph,const char* s
 ServerToClientTextFileInfo::ServerToClientTextFileInfo():ServerToClientText(){}
 ServerToClientTextFileInfo::ServerToClientTextFileInfo(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*fname,const unsigned int fkey):ServerToClientText(ph,frname,toname,ntime)
 {
-    memcpy(file_name,fname,64);
+    strcpy(file_name,fname);
     file_name[64]=0;
     file_key=fkey;
 }
@@ -212,7 +214,7 @@ unsigned int ServerToClientTextFileInfo::get_file_key()
 void ServerToClientTextFileInfo::set_string(const PacketHead& ph,const char* s)
 {
     ServerToClientText::set_string(ph,s);
-    memcpy(file_name,s+19+32+32,64);
+    strcpy(file_name,s+19+32+32);
     file_name[64]=0; 
     file_key=ntohl((*((unsigned int*)(s+19+32+64+32)))); 
 } 

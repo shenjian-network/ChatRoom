@@ -25,16 +25,16 @@ void ClientToServerBase::set_string(const PacketHead& ph,const char* s)
 ClientToServerReportLogin::ClientToServerReportLogin():ClientToServerBase(){}
 ClientToServerReportLogin::ClientToServerReportLogin(const PacketHead& ph,const char* uname,const char* upwd):ClientToServerBase(ph)
 {
-    memcpy(user_name,uname,32);
-    memcpy(user_pwd,upwd,32);
+    strcpy(user_name,uname);
+    strcpy(user_pwd,upwd);
     user_name[32]=0;
     user_pwd[32]=0;
 }
 void ClientToServerReportLogin::get_string(char* s)
 {
     ClientToServerBase::get_string(s);
-    memcpy(s+8,user_name,32);
-    memcpy(s+40,user_pwd,32);
+    strcpy(s+8,user_name);
+    strcpy(s+40,user_pwd);
 }
 char* ClientToServerReportLogin::get_user_name()
 {
@@ -47,8 +47,8 @@ char* ClientToServerReportLogin::get_user_pwd()
 void ClientToServerReportLogin::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    memcpy(user_name,s,32);
-    memcpy(user_pwd,s+32,32);
+    strcpy(user_name,s);
+    strcpy(user_pwd,s+32);
     user_name[32]=0;
     user_pwd[32]=0;
 }
@@ -56,9 +56,9 @@ void ClientToServerReportLogin::set_string(const PacketHead& ph,const char* s)
 ClientToServerReportUpdate::ClientToServerReportUpdate():ClientToServerBase(){}
 ClientToServerReportUpdate::ClientToServerReportUpdate(const PacketHead& ph,const char* uname,const char* last_upwd,const char* now_upwd):ClientToServerBase(ph)
 {
-    memcpy(user_name,uname,32);
-    memcpy(last_user_pwd,last_upwd,32);
-    memcpy(now_user_pwd,now_upwd,32);
+    strcpy(user_name,uname);
+    strcpy(last_user_pwd,last_upwd);
+    strcpy(now_user_pwd,now_upwd);
     user_name[32]=0;
     last_user_pwd[32]=0;
     now_user_pwd[32]=0;
@@ -66,9 +66,9 @@ ClientToServerReportUpdate::ClientToServerReportUpdate(const PacketHead& ph,cons
 void ClientToServerReportUpdate::get_string(char* s)
 {
     ClientToServerBase::get_string(s);
-    memcpy(s+8,user_name,32);
-    memcpy(s+40,last_user_pwd,32);  
-    memcpy(s+72,now_user_pwd,32);    
+    strcpy(s+8,user_name);
+    strcpy(s+40,last_user_pwd);  
+    strcpy(s+72,now_user_pwd);    
 }
 char* ClientToServerReportUpdate::get_user_name()
 {
@@ -85,9 +85,9 @@ char* ClientToServerReportUpdate::get_now_user_pwd()
 void ClientToServerReportUpdate::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    memcpy(user_name,s,32);
-    memcpy(last_user_pwd,s+32,32);
-    memcpy(now_user_pwd,s+64,32);
+    strcpy(user_name,s);
+    strcpy(last_user_pwd,s+32);
+    strcpy(now_user_pwd,s+64);
     user_name[32]=0;
     last_user_pwd[32]=0;   
     now_user_pwd[32]=0;
@@ -105,7 +105,7 @@ ClientToServerTextToUsers::ClientToServerTextToUsers(const PacketHead& ph,const 
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_info[i]=new char[33];
-        memcpy(user_info[i],uinfo[i],32);
+        strcpy(user_info[i],uinfo[i]);
         user_info[32]=0;
     }
     text_info=new char[text_length+1];
@@ -126,7 +126,7 @@ void ClientToServerTextToUsers::get_string(char* s)
     ClientToServerBase::get_string(s);
     memcpy(s+8,(char*)(&tmpi),4);
     for(int i=0;i<user_num;i++){
-        memcpy(s+12+i*32,user_info[i],32); 
+        strcpy(s+12+i*32,user_info[i]); 
     }
     memcpy(s+12+user_num*32,text_info,text_length);    
 }
@@ -158,7 +158,7 @@ void ClientToServerTextToUsers::set_string(const PacketHead& ph,const char* s)
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_info[i]=new char[33];
-        memcpy(user_info[i],s+4+32*i,32);
+        strcpy(user_info[i],s+4+32*i);
         user_info[32]=0;
     }
     text_info=new char[text_length+1];
@@ -182,10 +182,10 @@ ClientToServerTextFileToUsers::ClientToServerTextFileToUsers(const PacketHead& p
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_info[i]=new char[33];
-        memcpy(user_info[i],uinfo[i],32);
+        strcpy(user_info[i],uinfo[i]);
         user_info[32]=0;
     }
-    memcpy(file_name,fname,64);
+    strcpy(file_name,fname);
     file_name[64]=0;
     text_info=new char[text_length+1];
     memcpy( text_info, cinfo,text_length);
@@ -205,9 +205,9 @@ void ClientToServerTextFileToUsers::get_string(char* s)
     ClientToServerBase::get_string(s);
     memcpy(s+8,(char*)(&tmpi),4);
     for(int i=0;i<user_num;i++){
-        memcpy(s+12+i*32,user_info[i],32); 
+        strcpy(s+12+i*32,user_info[i]); 
     }
-    memcpy(s+12+user_num*32,file_name,64);
+    strcpy(s+12+user_num*32,file_name);
     memcpy(s+12+user_num*32+64,text_info,text_length);    
 }
 unsigned int ClientToServerTextFileToUsers::get_user_num()
@@ -246,10 +246,10 @@ void ClientToServerTextFileToUsers::set_string(const PacketHead& ph,const char* 
     user_info=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_info[i]=new char[33];
-        memcpy(user_info[i],s+4+32*i,32);
+        strcpy(user_info[i],s+4+32*i);
         user_info[32]=0;
     }
-    memcpy(file_name,s+4+32*user_num,64);
+    strcpy(file_name,s+4+32*user_num);
     file_name[64]=0;
     text_info=new char[text_length+1];
     memcpy(text_info,s+4+32*user_num+64,text_length);
@@ -281,14 +281,14 @@ ClientToServerTextAskForTexts::ClientToServerTextAskForTexts():ClientToServerBas
 ClientToServerTextAskForTexts::ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum,const char* ouser):ClientToServerBase(ph)
 {
     list_num=lnum;
-    memcpy(op_user,ouser,32);
+    strcpy(op_user,ouser);
 }
 void ClientToServerTextAskForTexts::get_string(char* s)
 {
     int tmpi=htonl(list_num);
     ClientToServerBase::get_string(s);
     memcpy(s+8,(char*)(&tmpi),4);    
-    memcpy(s+12,op_user,32);   
+    strcpy(s+12,op_user);   
 }
 unsigned int ClientToServerTextAskForTexts::get_list_num()
 {
@@ -302,7 +302,7 @@ void ClientToServerTextAskForTexts::set_string(const PacketHead& ph,const char* 
 {
     ClientToServerBase::set_string(ph,s);
     list_num=ntohl((*((unsigned int*)s)));   
-    memcpy(op_user,(s+4),32); 
+    strcpy(op_user,(s+4)); 
 } 
 /*ClientToServerUserSetUpdate*/
 ClientToServerUserSetUpdate::ClientToServerUserSetUpdate():ClientToServerBase()
@@ -346,18 +346,18 @@ void ClientToServerUserSetUpdate::set_string(const PacketHead& ph,const char* s)
 SenderToReceiverFileNotify::SenderToReceiverFileNotify():ClientToServerBase(){}
 SenderToReceiverFileNotify::SenderToReceiverFileNotify(const PacketHead& ph,const char* sn,const char* rn,const char* fn,unsigned int fs):ClientToServerBase(ph)
 {
-    memcpy(sender_name,sn,32);
-    memcpy(receiver_name,rn,32);
-    memcpy(file_name,fn,64);
+    strcpy(sender_name,sn);
+    strcpy(receiver_name,rn);
+    strcpy(file_name,fn);
     file_size=fs;
 }
 void SenderToReceiverFileNotify::get_string(char* s)
 {
     int tmpi=htonl(file_size);
     ClientToServerBase::get_string(s);
-    memcpy(s+8,sender_name,32);
-    memcpy(s+40,receiver_name,32);
-    memcpy(s+72,file_name,64);
+    strcpy(s+8,sender_name);
+    strcpy(s+40,receiver_name);
+    strcpy(s+72,file_name);
     memcpy(s+72+64,(char*)(&tmpi),4);        
 }
 char* SenderToReceiverFileNotify::get_sender_name()
@@ -383,9 +383,9 @@ unsigned int SenderToReceiverFileNotify::get_block_num()
 void SenderToReceiverFileNotify::set_string(const PacketHead& ph,const char* s)
 {
     ClientToServerBase::set_string(ph,s);
-    memcpy(sender_name,s,32);
-    memcpy(receiver_name,s+32,32);
-    memcpy(file_name,s+64,64);
+    strcpy(sender_name,s);
+    strcpy(receiver_name,s+32);
+    strcpy(file_name,s+64);
     file_size=ntohl((*((unsigned int*)(s+128))));
 }
 /*SenderToReceiverFileData*/

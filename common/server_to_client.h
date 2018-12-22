@@ -1,7 +1,7 @@
 //Copyright 2018 Tongji
 //License:GPL
 //Author:zyc
-//This is packet server send to client.
+//This is packet server send to client. 
 #ifndef Server2Client
 #define Server2Client
 #include "packet_head.h"
@@ -9,7 +9,7 @@
   一切只能通过初始化加参数或者初始化不加参数但是set_string(二者只能取其一)完成赋值*/
 /*基类*/
 class ServerToClientBase{
-public:
+public: 
     ServerToClientBase();
     ServerToClientBase(const PacketHead& ph);
     virtual ~ServerToClientBase(){}
@@ -33,7 +33,7 @@ public:
     char* get_last_login_time();
     unsigned int get_user_num();
     char** get_user_status();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     char last_login_time[20];//上次登录时间
@@ -49,7 +49,7 @@ public:
     ~ServerToClientInform(){}
     void get_string(char* s);
     char* get_user_name();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     char user_name[33];
@@ -65,7 +65,7 @@ public:
     char* get_user_from_name();
     char* get_user_to_name();
     char* get_now_time();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     char user_from_name[33];
@@ -82,7 +82,7 @@ public:
     void get_string(char* s);
     char* get_simple_text_contain();
     int get_text_length();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     //char user_from_name[33];
@@ -101,7 +101,7 @@ public:
     void get_string(char* s);
     char* get_file_name();
     unsigned int get_file_key();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     //char user_from_name[33];
@@ -120,7 +120,7 @@ public:
     void get_string(char* s);
     char* get_file_contain();
     int get_text_length();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s); 
 
 private:
     //PacketHead my_head;
@@ -142,7 +142,7 @@ public:
     void get_string(char* s);
     char* get_user_set_data();
     int get_text_length();
-    void set_string(const PacketHead& ph,const char* s);
+    void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     char* user_set_data;
