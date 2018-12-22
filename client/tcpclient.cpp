@@ -228,6 +228,10 @@ void TcpClient::chatRoomGUI(){
     // 左栏，包括登录信息、用户列表
     QVBoxLayout * leftLayout = new QVBoxLayout;
 
+    QPushButton * config = new QPushButton("设置");
+    config->setStyleSheet("QPushButton{background: rgb(46, 50, 56); color: white;}");
+    leftLayout->addWidget(config);
+
     QHBoxLayout * subsublayout1 = new QHBoxLayout;
     QLabel * curUserLabel = new QLabel("     当前用户");
     QLineEdit * curUsername = new QLineEdit(this->username);
@@ -301,12 +305,6 @@ void TcpClient::chatRoomGUI(){
                             "QScrollBar::sub-line:vertical{border: none;}");
     userList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-    // 仅做测试——————————————————
-    insertListWidget("zhongyuchen", true);
-    insertListWidget("zhaiyuchen", true);
-    insertListWidget("liyitao", false);
-    // ——————————————————————
-
     leftLayout->addLayout(subsublayout1);
     leftLayout->addLayout(subsublayout2);
     leftLayout->addLayout(subsublayout3);
@@ -333,7 +331,7 @@ void TcpClient::chatRoomGUI(){
 
 // 配置界面 （TODO）
 void TcpClient::configGUI(){
-    // 到底有哪些配置?
+
 }
 
 
@@ -366,7 +364,23 @@ void TcpClient::cls(){
 
 // 显示文本 （TODO）
 void TcpClient::showText(){
+    char* text = my_server_to_client_simple_text.get_simple_text_contain();
+    char* from = my_server_to_client_simple_text.get_user_from_name();
+    char* to = my_server_to_client_simple_text.get_user_to_name();
+    char* time = my_server_to_client_simple_text.get_now_time();
 
+    qDebug() << "text:" << text;
+    qDebug() << "from:" << from;
+    qDebug() << "time:" << time;
+
+    if(to[0] == '\0'){
+        QWidget * cur = rightStackLayout->itemAt(user2Index["群聊"])->widget();
+        QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
+        curTextBrowser->append(QString(from) + " <" + QString(time) + "> ");
+        curTextBrowser->append(QString(text));
+    }else{
+        showTextImpl(QString(from), QString(text), QString(time));
+    }
 }
 
 //TODO
@@ -408,21 +422,23 @@ void TcpClient::insertListWidget(QString name, bool isOnline){
     ft.setPointSize(12);
     user->setFont(ft);
 
-    connect(user, SIGNAL(clicked()), this, SLOT(userLabelClicked()));
+    connect(user, SIGNAL(clicked()), this, SLOT(userLabelClicked()), Qt::QueuedConnection);
 
     if(isOnline){
+        user->setEnabled(true);
         user->setStyleSheet("QLabel{background: rgb(46, 50, 56)}"
                                  "QLabel{color: rgb(255, 255, 255)}"
                                  "QLabel:hover{background: rgb(58,63,69)}");
     }else{
+        user->setEnabled(false);
         user->setStyleSheet("QLabel{background: rgb(46, 50, 56)}"
                             "QLabel:hover{background: rgb(58,63,69)}"
-                            "QLabel{color: rgb(255, 255, 255)}");
+                            "QLabel{color: rgb(128, 128, 128)}");
     }
 
     InitRightLayout();
 
-    user2Index.insert(name, index++);
+    user2Index.insert(name, ++index);
 
     userList->addItem(item);
     userList->setItemWidget(item, user);
@@ -486,29 +502,35 @@ void TcpClient::setUserStatus(QString name, bool isOnline){
 
     QListWidgetItem * item;
     QWidget * widget;
-    QCheckBox * box;
+    QLabel * box;
     QString curName;
 
+    qDebug() << "setUserStatus1";
     int flag = false;
     // O(n)遍历
     for(int i = 0;i < count; ++i){
         item = userList->item(i);
         widget = userList->itemWidget(item);
-        box = static_cast<QCheckBox*>(widget);
+        box = static_cast<QLabel*>(widget);
         curName = box->text();
 
         if(curName == name){
             flag = true;
             if(isOnline){
-                box->setStyleSheet("QCheckBox{background: 1px solid transparent}"
-                                   "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+                box->setEnabled(true);
+                box->setStyleSheet("QLabel{background: rgb(46, 50, 56)}"
+                                         "QLabel{color: rgb(255, 255, 255)}"
+                                         "QLabel:hover{background: rgb(58,63,69)}");
             } else {
-                box->setStyleSheet("QCheckBox{background:rgba(196, 196, 196, 50%); color: rgba(64, 64, 64, 50%)}"
-                                   "QCheckBox:hover{background:rgba(128, 128, 128, 50%)}");
+                box->setEnabled(false);
+                box->setStyleSheet("QLabel{background: rgb(46, 50, 56)}"
+                                    "QLabel:hover{background: rgb(58,63,69)}"
+                                    "QLabel{color: rgb(128, 128, 128)}");
             }
             break;
         }
     }
+    qDebug() << "setUserStatus2";
 
     // 如果没找到username, 报错
     if(!flag){
@@ -542,7 +564,19 @@ void TcpClient::reportSuccess(){
     else{ // 1. 登录成功包
         qDebug() << "登录成功" << this->username;
         loginWindow->close();
-        exit(0);
+        chatRoomGUI();
+
+        int num = my_server_to_client_report_success.get_user_num();
+        qDebug() << "所有用户" << num;
+        char** uinfo = my_server_to_client_report_success.get_user_status();
+        char name[32];
+        for(int i = 0;i < num; ++i){
+            memcpy(name, uinfo[i], 32);
+            qDebug() << name << " " << int(uinfo[i][32]-'0');
+            insertListWidget(QString(name), int(uinfo[i][32]-'0'));
+        }
+
+        insertListWidget(QString("群聊"), true);
     }
 }
 
@@ -559,13 +593,11 @@ void TcpClient::writeFileContain(){
 
 
 // 显示消息，带GUI
-void TcpClient::showTextImpl(QString name, QString msg, QDateTime tm){
-    QWidget * cur = rightStackLayout->itemAt(curIndex)->widget();
+void TcpClient::showTextImpl(QString name, QString msg, QString tm){
+    QWidget * cur = rightStackLayout->itemAt(user2Index[name])->widget();
     QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
-    curTextBrowser->append(name + " <" + tm.toString("yyyy-MM-dd hh:mm:ss") + "> ");
-    QString past = curTextBrowser->toHtml();
-    curTextBrowser->setHtml(past +
-                  "<div style='font-size:18px; background: rgb(0, 130, 255); color: black;'>"+ msg + "</div>");
+    curTextBrowser->append(name + " <" + tm + "> ");
+    curTextBrowser->append(msg);
 }
 
 
@@ -752,7 +784,9 @@ void TcpClient::on_sendBtn_clicked(){
 
     curTextEdit->clear();  //清空输入栏的内容
 
-    showTextImpl(username, text, QDateTime::currentDateTime());
+    QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
+    curTextBrowser->append(username + " <" + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + "> ");
+    curTextBrowser->append(text);
 
     qDebug() << "当前对话的用户" << curChatter->text();
     qDebug() << "消息内容：" << text;
@@ -772,14 +806,20 @@ void TcpClient::on_sendBtn_clicked(){
     //获取用户名对应的二维数组
     char **uinfo = new char*[1];
     uinfo[0] = new char[32];
-    strncpy(uinfo[0], stringPadding(QStringToString(curChatter->text()), 32).c_str(), 32);
+    if(curChatter->text() == "群聊") {
+        memset(uinfo[0], 0, sizeof(uinfo[0]));
+    }else{
+        strncpy(uinfo[0], stringPadding(QStringToString(curChatter->text()), 32).c_str(), 32);
+    }
+
 
     ClientToServerTextToUsers sendClientToServerTextToUsers(sendPacketHead,
         1, uinfo, textString.c_str());
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerTextToUsers.get_string(tmpStr);
-    // socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
+
     delete[] tmpStr;
 
     for(int i = 0; i < 1; ++i)
@@ -944,7 +984,7 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
 void TcpClient::timeUpdate(){
     if(chatRoomWindow){
         QLineEdit* line = static_cast<QLineEdit*>(chatRoomWindow->layout()->itemAt(0)->
-                                                  layout()->itemAt(4)->layout()->itemAt(1)->widget());
+                                                  layout()->itemAt(5)->layout()->itemAt(1)->widget());
         line->setText(QString::number(time.elapsed() / 1000));
     }
 }
@@ -955,18 +995,32 @@ void TcpClient::timeUpdate(){
 void TcpClient::userLabelClicked(){
     QObject * object = QObject::sender();
     ClickableLabel * user = qobject_cast<ClickableLabel*>(object);
-
     if(preChatter){
-        // 撤销高亮
-        preChatter->setStyleSheet("QLabel{background: rgb(46, 50, 56);}"
-                                 "QLabel{color: rgb(255, 255, 255);}"
-                                 "QLabel:hover{background: rgb(58,63,69);}");
+        if(preChatter->isEnabled()){
+            // 撤销高亮
+            preChatter->setStyleSheet("QLabel{background: rgb(46, 50, 56);}"
+                                     "QLabel{color: rgb(255, 255, 255);}"
+                                     "QLabel:hover{background: rgb(58,63,69);}");
+        }else{
+            // 撤销高亮
+            preChatter->setStyleSheet("QLabel{background: rgb(46, 50, 56);}"
+                                     "QLabel{color: rgb(128, 128, 128);}"
+                                     "QLabel:hover{background: rgb(58,63,69);}");
+        }
+
     }
 
-    // 高亮
-    user->setStyleSheet("QLabel{background: rgb(58,63,69);}"
-                             "QLabel{color: rgb(255, 255, 255);}"
-                             "QLabel:hover{background: rgb(58,63,69);}");
+    if(user->isEnabled()){
+        // 高亮
+        user->setStyleSheet("QLabel{background: rgb(58,63,69);}"
+                                 "QLabel{color: rgb(255, 255, 255);}"
+                                 "QLabel:hover{background: rgb(58,63,69);}");
+    } else{
+        // 高亮
+        user->setStyleSheet("QLabel{background: rgb(58,63,69);}"
+                                 "QLabel{color: rgb(128, 128, 128);}"
+                                 "QLabel:hover{background: rgb(58,63,69);}");
+    }
 
 
     preChatter = user;
@@ -975,6 +1029,7 @@ void TcpClient::userLabelClicked(){
     int index = user2Index[user->text()];
     curIndex = index;
     rightStackLayout->setCurrentIndex(index);
+    qDebug() << index;
     QLabel* label = static_cast<QLabel*>(rightStackLayout->currentWidget()->layout()->itemAt(0)->widget());
     label->setText(user->text());
 
