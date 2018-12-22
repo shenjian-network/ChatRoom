@@ -21,6 +21,7 @@
 #include <QString>
 #include <QFile>
 #include <QPlainTextEdit>
+#include <QFileDialog>
 
 
 TcpClient::TcpClient(QWidget *parent) :
@@ -512,6 +513,7 @@ void TcpClient::showFileTransferring(std::string senderName, std::string recvNam
     int perCent = 100 * FILEBUFFERSIZE * fileToShow.blockCnt / fileToShow.len;
     //TODO
     //GUI显示进度百分比perCent
+    pdlg->setValue(perCent);
 }
 
 //TODO
@@ -545,24 +547,25 @@ int getFileLen(const char * fileName)
 }
 
 //TODO
-void TcpClient::tryToSend()
+void TcpClient::tryToSend(QString fileName)
 {   
     /*
     点击发送文件的按钮触发的事件,首先需要获得接收方用户名recvName, 文件名fileName
     */
-    QString recvName;
-    QString fileName;
+    QString recvName = curChatter->text();
 
+    qDebug() << "要发送的文件" << fileName;
+    qDebug() << "发送的用户" << recvName;
 
-
-
-
+    pdlg = new QProgressDialog;
 
 
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
     std::string fileNameString = QStringToString(fileName);
     int fileLen = getFileLen(fileNameString.c_str());
+
+    qDebug() << "文件长度" << fileLen;
     
     /*
     首先在sendFile这个Map中查看是否存在，如果存在则说明正在发送，弹窗显示不能继续发送,
@@ -573,7 +576,7 @@ void TcpClient::tryToSend()
     if(sendFile.find(sendFileKey) == sendFile.end())
     {
         //Map中找不到，说明不是正在发送，可以发送，要显示发送的进度
-        FILE* fd = fopen(senderNameString.c_str(), "rb");
+        FILE* fd = fopen(fileNameString.c_str(), "rb");
         sendFile[sendFileKey] = fileTrans(fd, 0, fileLen);
 
         showFileTransferring(senderNameString, recvNameString, fileNameString, true);
@@ -607,24 +610,40 @@ void TcpClient::showTryToSend()
 {
     //receiver收到请求发送包，要显示出相关的文件信息，并提供相关的按钮（接收/取消），如果点击接收，那么要有是否覆盖的提示
 
+    // 发送者，文件名
+    senderName = my_sender_to_receiver_file_notify.get_sender_name();
+    fileName = my_sender_to_receiver_file_notify.get_file_name();
+    fileLen = my_sender_to_receiver_file_notify.get_file_size();
+
+    fileWindow = new QWidget;
+
+    QVBoxLayout* mainLayout = new QVBoxLayout;
+
+    QLabel* info = new QLabel(senderName + "将向你发送文件\"" + fileName + "\", 大小为" +  QString(fileLen)  +"字节，是否同意?");
+
+    QHBoxLayout* sublayout = new QHBoxLayout;
+    QPushButton * ack = new QPushButton("接受");
+    QPushButton * rjt = new QPushButton("拒绝");
+    sublayout->addWidget(ack);
+    sublayout->addWidget(rjt);
+
+    mainLayout->addWidget(info);
+    mainLayout->addLayout(sublayout);
+    fileWindow->setLayout(mainLayout);
+
+    connect(ack, SIGNAL(clicked()), this, SLOT(acceptRecv()), Qt::QueuedConnection);
+    connect(ack, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()), Qt::QueuedConnection);
+
+    fileWindow->show();
 }
 
 //TODO
 void TcpClient::acceptRecv()
 {
+    fileWindow->close();
     /*
     点击文件接收按钮触发的事件,首先要获得发送方用户名senderName, 文件名称fileName,文件大小fileLen
-    */
-    QString senderName;
-    QString fileName;
-    int fileLen;
-
-
-
-
-
-
-    
+    */    
 
     /*
     open本地文件，打开方式为trunc
@@ -638,8 +657,6 @@ void TcpClient::acceptRecv()
 
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
-    if(recvFile.find(recvFileKey) == recvFile.end())
-        return;
 
     recvFile[recvFileKey] = fileTrans(fd, 0, fileLen);
     
@@ -662,11 +679,14 @@ void TcpClient::acceptRecv()
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
+
+    qDebug() << "it sends";
 }
 
 
 void TcpClient::sendFileData()
 {
+    qDebug() << "it works";
     /*Sender收到请求发送包后，从中读取块，然后发送*/
     /*
     注意：由于common包没有处理尾0的情况，因此username只允许到31
@@ -676,11 +696,19 @@ void TcpClient::sendFileData()
     std::string fileNameString = std::string(my_sender_to_receiver_file_notify.get_file_name());
     unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
 
+    qDebug() << QString(senderNameString.c_str());
+    qDebug() << QString(recvNameString.c_str());
+    qDebug() << QString(fileNameString.c_str());
+    qDebug() << blockCnt;
+
+
+
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
     if(sendFile.find(sendFileKey) == sendFile.end())
         return;
-    
+
+    qDebug() << "get here";
     auto myFileTrans = sendFile[sendFileKey];
 
     char* fileContain = new char [FILEBUFFERSIZE + 1];
@@ -769,15 +797,12 @@ void TcpClient::writeDataAndRequest()
 //主动取消发送
 void TcpClient::cancelSendFileDataActive()
 {
+    fileWindow->close();
     //需要知道recvName和fileName
     QString recvName;
     QString fileName;
 
     //TODO
-
-
-
-
 
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
@@ -819,14 +844,6 @@ void TcpClient::cancelSendFileDataActive()
 void TcpClient::cancelRecvFileDataActive()
 {
     //需要知道senderName和fileName
-    QString senderName;
-    QString fileName;
-    //TODO
-
-
-
-
-
 
 
     std::string senderNameString = QStringToString(senderName);
@@ -1230,7 +1247,6 @@ void TcpClient::InitRightLayout(){
 
     connect(send, SIGNAL(clicked()),  this, SLOT(on_sendBtn_clicked()), Qt::QueuedConnection);
 
-
     QPushButton * review = new QPushButton("Review");
     review->setStyleSheet("QPushButton:hover{background: rgb(248, 248, 248);}");
     review->setFixedSize(95, 30);
@@ -1238,6 +1254,14 @@ void TcpClient::InitRightLayout(){
     review->setParent(textEditArea);
 
     connect(review, SIGNAL(clicked()),  this, SLOT(cls()), Qt::QueuedConnection);
+
+    QPushButton * file = new QPushButton("File");
+    file->setStyleSheet("QPushButton:hover{background: rgb(248, 248, 248);}");
+    file->setFixedSize(95, 30);
+    file->setGeometry(185, 130, 95, 30);
+    file->setParent(textEditArea);
+
+    connect(file, SIGNAL(clicked()),  this, SLOT(on_fileDialogBtn_clicked()), Qt::QueuedConnection);
 
     rightLayout->addWidget(textEditArea);
     rightLayout->setStretchFactor(textfield, 2);
@@ -1865,3 +1889,16 @@ void TcpClient::readyRead(){
 }
 
 
+void TcpClient::on_fileDialogBtn_clicked(){
+    QString filename = QFileDialog::getOpenFileName(
+                this,
+                "Open Document",
+                QDir::currentPath(),
+                 tr("Allfile(*.*)")
+                );
+
+//    qDebug() << filename;
+    int index = filename.lastIndexOf('/');
+    filename = filename.mid(index+1, -1);
+    tryToSend(filename);
+}

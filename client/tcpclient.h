@@ -7,11 +7,13 @@
 #include <QTime>
 #include <QVBoxLayout>
 #include <QStackedLayout>
+#include <QProgressDialog>
 #include <map>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
 #include "clickablelabel.h"
+
 
 
 namespace Ui {
@@ -115,11 +117,11 @@ public:
 
     void showTextImpl(QString name, QString msg, QString tm, bool isMyself=false);
 
-    void tryToSend();
+    void tryToSend(QString filename);
 
     void InitRightLayout();
 
-    void acceptRecv();
+
 
     void showTryToSend();
 
@@ -129,7 +131,7 @@ public:
 
     void cancelSendFileDataActive();//send主动取消发送（GUI触发）
 
-    void cancelRecvFileDataActive();//recv主动取消发送 (GUI触发)
+
 
     void cancelSendFileDataPassive();//send被动取消发送，由对面的取消包触发
 
@@ -191,6 +193,13 @@ private slots:
     //发送请求回看包
     void askForReview();
 
+    void on_fileDialogBtn_clicked();
+
+
+    void acceptRecv();
+
+    void cancelRecvFileDataActive();//recv主动取消发送 (GUI触发)
+
 private:
     PacketHead my_packet_head;
     ServerToClientReportSuccess my_server_to_client_report_success;
@@ -209,6 +218,7 @@ private:
     QWidget *chatRoomWindow;
     QWidget *changePwdWindow;
     QWidget *configWindow;
+    QWidget *fileWindow;
     QListWidget * userList;
     QTime time;
 
@@ -227,7 +237,11 @@ private:
     QMap <QString, int> user2Index;
     int curIndex;
     bool isOnline;
+    QProgressDialog* pdlg;
 
+    QString senderName;
+    QString fileName;
+    int fileLen;
 };
 
 #endif // TCPCLIENT_H
