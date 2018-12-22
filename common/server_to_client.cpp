@@ -81,7 +81,7 @@ void ServerToClientReportSuccess::set_string(const PacketHead& ph,const char* s)
     ServerToClientBase::set_string(ph,s);
     memcpy(last_login_time,s,19);
     last_login_time[19]=0;
-    user_num=ntohs((*((unsigned int*)(s+19)))); 
+    user_num=ntohl((*((unsigned int*)(s+19)))); 
     user_status=new char*[user_num];
     for(int i=0;i<user_num;i++){
         user_status[i]=new char[33];
@@ -214,7 +214,7 @@ void ServerToClientTextFileInfo::set_string(const PacketHead& ph,const char* s)
     ServerToClientText::set_string(ph,s);
     memcpy(file_name,s+19+32+32,64);
     file_name[64]=0; 
-    file_key=ntohs((*((unsigned int*)(s+19+32+64+32)))); 
+    file_key=ntohl((*((unsigned int*)(s+19+32+64+32)))); 
 } 
 /*ServerToClientTextFileContain*/
 ServerToClientTextFileContain::ServerToClientTextFileContain():ServerToClientTextFileInfo()
