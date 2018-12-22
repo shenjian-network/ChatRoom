@@ -68,6 +68,8 @@ public:
 
     void errorGUI(const QString& err);
 
+    void successGUI(const QString& err);
+
     //显示更改密码成功窗口
     void changePwdSuccessGUI();
 

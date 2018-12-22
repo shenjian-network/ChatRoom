@@ -215,6 +215,10 @@ void TcpClient::errorGUI(const QString& err){
     reply = QMessageBox::information(this, tr("错误"), err);
 }
 
+void TcpClient::successGUI(const QString& err){
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::information(this, tr("成功"), err);
+}
 
 // 显示聊天室的新窗口，用于聊天(TODO)
 void TcpClient::chatRoomGUI(){
@@ -509,7 +513,8 @@ void TcpClient::showFileTransferring(std::string senderName, std::string recvNam
             return;
         fileToShow = recvFile[fileKey];
     }
-    
+
+
     int perCent = 100 * FILEBUFFERSIZE * fileToShow.blockCnt / fileToShow.len;
     //TODO
     //GUI显示进度百分比perCent
@@ -537,7 +542,7 @@ void TcpClient::doneFileTransferring(std::string senderName, std::string recvNam
 {
     //显示文件传输完成
     pdlg->setValue(100);
-    errorGUI("传输完成");
+    successGUI("传输完成");
 }
 
 
@@ -708,12 +713,6 @@ void TcpClient::sendFileData()
     std::string fileNameString = std::string(my_sender_to_receiver_file_notify.get_file_name());
     unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
 
-    qDebug() << QString(senderNameString.c_str());
-    qDebug() << QString(recvNameString.c_str());
-    qDebug() << QString(fileNameString.c_str());
-    qDebug() << blockCnt;
-
-
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
@@ -737,9 +736,10 @@ void TcpClient::sendFileData()
         sendFile.erase(sendFileKey);
         doneFileTransferring(senderNameString, recvNameString, fileNameString, true);
     }
-    else   
+    else{
+        sendFile[sendFileKey].blockCnt = blockCnt;
         showFileTransferring(senderNameString, recvNameString, fileNameString, true);
-
+    }
     SenderToReceiverFileData senderToReceiverFileData(sendPacketHead,
         stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
         stringPadding(fileNameString, 64).c_str(), blockCnt, fileContain);
