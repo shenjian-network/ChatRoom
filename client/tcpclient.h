@@ -70,7 +70,7 @@ public:
 
     void chatRoomGUI();  //聊天室新窗口
 
-    void configGUI();
+
 
     // two conditions... if it is myself, yor'are out; if it is other, modify GUI
     void offline();
@@ -97,8 +97,7 @@ public:
     //将config转换成string输出
     std::string configString();
 
-    //向server发送配置包
-    void sendConfig();
+
 
     // read config
     void setConfig();
@@ -179,6 +178,11 @@ private slots:
     // 更新时间
     void timeUpdate();
 
+    void configGUI();
+
+    //向server发送配置包
+    void sendConfig();
+
 private:
     PacketHead my_packet_head;
     ServerToClientReportSuccess my_server_to_client_report_success;
@@ -196,6 +200,7 @@ private:
     QWidget *loginWindow;
     QWidget *chatRoomWindow;
     QWidget *changePwdWindow;
+    QWidget *configWindow;
     QListWidget * userList;
     QTime time;
 

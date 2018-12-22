@@ -9,7 +9,6 @@
 #include<string.h>
 #include<iostream>
 #include<string>
-
 const int FILEBUFFERSIZE=3964;
 /*为了方便统一，因而只有getString和toString才包括网络序和主机序的转化，其他均为正常用法*/
 class PacketHead{
