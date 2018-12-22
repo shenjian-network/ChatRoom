@@ -15,6 +15,7 @@ class TcpClient;
 }
 
 const unsigned int kPacketHeadLen = 8;
+const unsigned int kFileDataLen = 4096;
 enum ReadState
 {
     READ_PACKET_HEAD,
@@ -34,9 +35,9 @@ enum ReadState
 
 struct fileTrans
 {
-    int fd;
-    int len;
-    int blockCnt;
+    FILE* fd = nullptr;
+    int blockCnt = 0;
+    int len = 0;
 };
 
 class TcpClient : public QMainWindow
@@ -96,7 +97,29 @@ public:
 
     void showTextImpl(QString name, QString msg, QDateTime tm);
 
+    void tryToSend();
+
     void showTryToSend();
+
+    void sendFileData();//发送数据包
+
+    void writeDataAndRequest();//rec从包中获得数据并向send发送新的请求
+
+    void cancelSendFileDataActive();//send主动取消发送（GUI触发）
+
+    void cancelRecvFileDataActive();//recv主动取消发送 (GUI触发)
+
+    void cancelSendFileDataPassive();//send被动取消发送，由对面的取消包触发
+
+    void cancelRecvFileDataPassive();//recv被动取消接收，由对面的取消包触发
+
+    void showFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender);
+
+    void errorFileTransferring(std::string senderName, std::string recvName, std::string fileName);
+
+    void cancelFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender);
+
+    void doneFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender);
 
 private slots:
     // Signal func to handle read event
@@ -139,7 +162,8 @@ private:
     ServerToClientTextFileInfo my_server_to_client_file_info;
     ServerToClientTextFileContain my_server_to_client_text_file_contain;
     ServerToClientUserSetUpdate my_server_to_client_user_set_update;
-
+    SenderToReceiverFileNotify my_sender_to_receiver_file_notify;
+    SenderToReceiverFileData my_sender_to_receiver_file_data;
     QTcpSocket *socket;
     Ui::TcpClient *ui;
 
@@ -153,7 +177,7 @@ private:
     QString username;
     QString password;
     QString ip;
-    std::map<std::string, std::string> configData;
+    std::map<std::string, std::string> configMap;
     std::map<std::string, fileTrans> sendFile;
     srd::map<std::string, fileTrans> recvFile;
     unsigned short port;
