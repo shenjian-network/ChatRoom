@@ -570,7 +570,7 @@ void TcpClient::tryToSend(QString fileName)
 
     pdlg = new QProgressDialog;
     QPushButton* cancel = new QPushButton("cancel");
-    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelSendFileDataActive()));
     pdlg->setCancelButton(cancel);
 
     std::string senderNameString = QStringToString(username);
@@ -674,7 +674,7 @@ void TcpClient::acceptRecv()
     recvFile[recvFileKey] = fileTrans(fd, 0, fileLen);
     pdlg = new QProgressDialog;
     QPushButton* cancel = new QPushButton("cancel");
-    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelSendFileDataActive()));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()));
     pdlg->setCancelButton(cancel);
 
     /*
