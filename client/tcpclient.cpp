@@ -489,7 +489,7 @@ void TcpClient::tryToSend()
 
         char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
         sendSenderToReceiverFileNotify.get_string(tmpStr);
-        socket->write(tmpStr, 8 + sendPacketHead.get_length());
+        socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
         delete[] tmpStr;
     }
@@ -557,7 +557,7 @@ void TcpClient::acceptRecv()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     recvSenderToReceiverFileNotify.get_string(tmpStr);
-    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 }
@@ -605,7 +605,7 @@ void TcpClient::sendFileData()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     senderToReceiverFileData.get_string(tmpStr);
-    socket->write(tmpStr, 8 + sendPacketHead.get_length());
+    socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
     delete[] fileContain;
@@ -647,7 +647,7 @@ void TcpClient::writeDataAndRequest()
 
         char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
         recvSenderToReceiverFileNotify.get_string(tmpStr);
-        socket->write(tmpStr, 8 + sendPacketHead.get_length());
+        socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
         delete[] tmpStr;
     }
@@ -1039,7 +1039,7 @@ void TcpClient::on_loginBtn_clicked()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
@@ -1091,7 +1091,7 @@ void TcpClient::on_signupBtn_clicked()
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportLogin.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 }
@@ -1270,7 +1270,7 @@ void TcpClient::on_changePwdAckBtn_clicked(){
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
     sendClientToServerReportUpdate.get_string(tmpStr);
-     socket->write(tmpStr, 8 + sendPacketHead.get_length());
+     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
     delete[] tmpStr;
 
