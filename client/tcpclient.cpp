@@ -486,9 +486,9 @@ void TcpClient::showText(){
     }
 }
 
-std::string getKey(std::string senderNameString, std::string recvNameString, std::string fileNameSting)
+std::string getKey(std::string senderNameString, std::string recvNameString, std::string fileNameString)
 {
-    return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileNameSting, 64);
+    return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileNameString, 64);
 }
 
 //TODO
@@ -632,7 +632,7 @@ void TcpClient::showTryToSend()
     fileWindow->setLayout(mainLayout);
 
     connect(ack, SIGNAL(clicked()), this, SLOT(acceptRecv()), Qt::QueuedConnection);
-    connect(ack, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()), Qt::QueuedConnection);
+    connect(rjt, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()), Qt::QueuedConnection);
 
     fileWindow->show();
 }
@@ -655,11 +655,11 @@ void TcpClient::acceptRecv()
     std::string fileNameString = QStringToString(fileName);
     FILE* fd = fopen(fileNameString.c_str(), "wb");
 
+
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
-
     recvFile[recvFileKey] = fileTrans(fd, 0, fileLen);
-    
+
     /*
     向对端发送同意接收包
     */
@@ -708,7 +708,6 @@ void TcpClient::sendFileData()
     if(sendFile.find(sendFileKey) == sendFile.end())
         return;
 
-    qDebug() << "get here";
     auto myFileTrans = sendFile[sendFileKey];
 
     char* fileContain = new char [FILEBUFFERSIZE + 1];
@@ -789,6 +788,7 @@ void TcpClient::writeDataAndRequest()
             myFileTrans.len - myFileTrans.blockCnt * FILEBUFFERSIZE, myFileTrans.fd);
         
         fclose(myFileTrans.fd);
+        qDebug() << "writeDataAndRequest erase!";
         recvFile.erase(recvFileKey);
         doneFileTransferring(senderNameString, recvNameString, fileNameString, false);
     }
@@ -881,6 +881,8 @@ void TcpClient::cancelRecvFileDataActive()
 
     fclose(recvFile[recvFileKey].fd);
     remove(fileNameString.c_str());
+
+    qDebug() << "cancelRecvFileDataActive erase";
     recvFile.erase(recvFileKey);
 }
 
@@ -919,6 +921,8 @@ void TcpClient::cancelRecvFileDataPassive()
 
     fclose(recvFile[recvFileKey].fd);
     remove(fileNameString.c_str());
+
+    qDebug() << "cancelRecvFileDataPassive erase";
     recvFile.erase(recvFileKey);
 }
 
@@ -1793,6 +1797,7 @@ void TcpClient::readyRead(){
                         }
                         break;
                     case PacketHead::kC2CFileData:
+                        qDebug() << "kc2cfiledata";
                         current_read_state = READ_C2C_FILE_DATA;
                         current_byte_num_to_read = my_packet_head.get_length();
                         break;
@@ -1862,6 +1867,7 @@ void TcpClient::readyRead(){
                 break;
 
             case READ_C2C_FILE_DATA://recv收到数据包
+                qDebug() << "READ_C2C_FILE_DATA";
                 my_sender_to_receiver_file_data.set_string(my_packet_head, set_byte_array.constData());
                 writeDataAndRequest();//写数据并发送请求用户发送包
                 current_read_state = READ_PACKET_HEAD;
