@@ -532,6 +532,8 @@ void TcpClient::cancelFileTransferring(std::string senderName, std::string recvN
 void TcpClient::doneFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender)
 {
     //显示文件传输完成
+    pdlg->setValue(100);
+    errorGUI("传输完成");
 }
 
 
@@ -558,7 +560,9 @@ void TcpClient::tryToSend(QString fileName)
     qDebug() << "发送的用户" << recvName;
 
     pdlg = new QProgressDialog;
-
+    QPushButton* cancel = new QPushButton("cancel");
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelRecvFileDataActive()));
+    pdlg->setCancelButton(cancel);
 
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
@@ -659,6 +663,10 @@ void TcpClient::acceptRecv()
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
     recvFile[recvFileKey] = fileTrans(fd, 0, fileLen);
+    pdlg = new QProgressDialog;
+    QPushButton* cancel = new QPushButton("cancel");
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelSendFileDataActive()));
+    pdlg->setCancelButton(cancel);
 
     /*
     向对端发送同意接收包
@@ -746,19 +754,19 @@ void TcpClient::writeDataAndRequest()
     std::string senderNameString = std::string(my_sender_to_receiver_file_data.get_sender_name());
     std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
-    unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
+    unsigned int blockCnt = my_sender_to_receiver_file_data.get_block_num();
     
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
     if(recvFile.find(recvFileKey) == recvFile.end())
         return;
 
+
     auto myFileTrans = recvFile[recvFileKey];
 
     if(blockCnt != 0xFFFF)
     {
         fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, FILEBUFFERSIZE, myFileTrans.fd);
-
         showFileTransferring(senderNameString, recvNameString, fileNameString, false);
         /*
         向对端发送请求接收包
@@ -766,12 +774,9 @@ void TcpClient::writeDataAndRequest()
         ++blockCnt;
         recvFile[recvFileKey].blockCnt = blockCnt;
         PacketHead sendPacketHead;
-
         sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
         sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyAccept);
-
         sendPacketHead.set_length(132);
-
         SenderToReceiverFileNotify recvSenderToReceiverFileNotify(sendPacketHead,
             stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
             stringPadding(fileNameString, 64).c_str(), blockCnt);
@@ -784,13 +789,15 @@ void TcpClient::writeDataAndRequest()
     }
     else
     {
+
         fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, 
             myFileTrans.len - myFileTrans.blockCnt * FILEBUFFERSIZE, myFileTrans.fd);
-        
+
         fclose(myFileTrans.fd);
         qDebug() << "writeDataAndRequest erase!";
         recvFile.erase(recvFileKey);
         doneFileTransferring(senderNameString, recvNameString, fileNameString, false);
+
     }
 }
 
