@@ -1,6 +1,7 @@
 ﻿#include "tcpclient.h"
 #include "ui_tcpclient.h"
 
+#include <cstdio>
 #include <string.h>
 #include <sstream>
 #include <QDialog>
@@ -336,6 +337,19 @@ void TcpClient::configGUI(){
     // 到底有哪些配置?
 }
 
+// *****辅助函数***** //
+
+std::string QStringToString(const QString & myQstring)
+{
+    return std::string(myQstring.toLocal8Bit().constData());
+}
+
+std::string stringPadding(std::string myString, const unsigned int & len)
+{
+    myString.resize(len, 0);
+    return myString;
+}
+
 
 // 下线的操作 （FINISHED）
 // 需要熄灭用户栏，如果下线的是自己，会退出
@@ -369,9 +383,9 @@ void TcpClient::showText(){
 
 }
 
-std::string getKey(std::string senderName, std::string recvName, std::string fileName)
+std::string getKey(std::string senderNameString, std::string recvNameString, std::string fileNameSting)
 {
-    return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileName, 64);
+    return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileNameSting, 64);
 }
 
 //TODO
@@ -384,7 +398,7 @@ void TcpClient::showFileTransferring(std::string senderName, std::string recvNam
     {
         if(sendFile.find(fileKey) == sendFile.end())
             return;
-        fileToShow = sendFile[fileKey]
+        fileToShow = sendFile[fileKey];
     }
     else
     {
@@ -395,7 +409,7 @@ void TcpClient::showFileTransferring(std::string senderName, std::string recvNam
     
     int perCent = 100 * FILEBUFFERSIZE * fileToShow.blockCnt / fileToShow.len;
     //TODO
-    //GUI显示进度百分比
+    //GUI显示进度百分比perCent
 }
 
 //TODO
@@ -424,16 +438,24 @@ int getFileLen(const char * fileName)
     fp = fopen(fileName,"rb");
     fseek(fp, 0, SEEK_END);
     fileLen = ftell(fp);
-    flcose(fp);
+    fclose(fp);
     return fileLen;
 }
 
 //TODO
 void TcpClient::tryToSend()
-{
+{   
     /*
     点击发送文件的按钮触发的事件,首先需要获得接收方用户名recvName, 文件名fileName
     */
+    QString recvName;
+    QString fileName;
+
+
+
+
+
+
 
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
@@ -449,10 +471,10 @@ void TcpClient::tryToSend()
     if(sendFile.find(sendFileKey) == sendFile.end())
     {
         //Map中找不到，说明不是正在发送，可以发送，要显示发送的进度
-        FILE* fd = fopen(fd, "rb")
+        FILE* fd = fopen(senderNameString.c_str(), "rb");
         sendFile[sendFileKey] = fileTrans(fd, 0, fileLen);
 
-        showFileTransferring(senderNameString, recvNameString, fileNameString, isSender = true);
+        showFileTransferring(senderNameString, recvNameString, fileNameString, true);
         //给对端发请求发送包
         PacketHead sendPacketHead;
 
@@ -491,6 +513,14 @@ void TcpClient::acceptRecv()
     /*
     点击文件接收按钮触发的事件,首先要获得发送方用户名senderName, 文件名称fileName,文件大小fileLen
     */
+    QString senderName;
+    QString fileName;
+    int fileLen;
+
+
+
+
+
 
     
 
@@ -542,7 +572,7 @@ void TcpClient::sendFileData()
     std::string senderNameString = std::string(my_sender_to_receiver_file_notify.get_sender_name());
     std::string recvNameString = std::string(my_sender_to_receiver_file_notify.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_notify.get_file_name());
-    int blockCnt = my_sender_to_receiver_file_notify.get_block_num());
+    unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
@@ -552,7 +582,7 @@ void TcpClient::sendFileData()
     auto myFileTrans = sendFile[sendFileKey];
 
     char* fileContain = new char [FILEBUFFERSIZE];
-    int readSize = fread(fileContain, 1, FILEBUFFERSIZE, myFileTrans.fd);
+    unsigned int readSize = fread(fileContain, 1, FILEBUFFERSIZE, myFileTrans.fd);
 
     PacketHead sendPacketHead;
 
@@ -564,10 +594,10 @@ void TcpClient::sendFileData()
         blockCnt = 0xFFFF;
         fclose(myFileTrans.fd);
         sendFile.erase(sendFileKey);
-        doneFileTransferring(senderNameString, recvNameString, fileNameString, isSender = true);
+        doneFileTransferring(senderNameString, recvNameString, fileNameString, true);
     }
     else   
-        showFileTransferring(senderNameString, recvNameString, fileNameString, isSender = true);
+        showFileTransferring(senderNameString, recvNameString, fileNameString, true);
 
     SenderToReceiverFileData senderToReceiverFileData(sendPacketHead,
         stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
@@ -587,7 +617,7 @@ void TcpClient::writeDataAndRequest()
     std::string senderNameString = std::string(my_sender_to_receiver_file_data.get_sender_name());
     std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
-    int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
+    unsigned int blockCnt = my_sender_to_receiver_file_notify.get_block_num();
     
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
@@ -598,7 +628,7 @@ void TcpClient::writeDataAndRequest()
 
     if(blockCnt != 0xFFFF)
     {
-        showFileTransferring(senderNameString, recvNameString, fileNameString, isSender = false);
+        showFileTransferring(senderNameString, recvNameString, fileNameString, false);
         /*
         向对端发送请求接收包
         */
@@ -625,19 +655,30 @@ void TcpClient::writeDataAndRequest()
     {
         fclose(myFileTrans.fd);
         recvFile.erase(recvFileKey);
-        doneFileTransferring(senderNameString, recvNameString, fileNameString, isSender = false);
+        doneFileTransferring(senderNameString, recvNameString, fileNameString, false);
     }
 }
 
 //主动取消发送
 void TcpClient::cancelSendFileDataActive()
 {
-    //需要知道recvName和FileName
+    //需要知道recvName和fileName
+    QString recvName;
+    QString fileName;
+
+    //TODO
+
+
+
+
+
+
+
     std::string senderNameString = QStringToString(username);
     std::string recvNameString = QStringToString(recvName);
     std::string fileNameString = QStringToString(fileName);
 
-    cancelFileTransferring(senderNameString, recvNameString, fileNameString, isSender = true);//GUI显示取消发送
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
     
@@ -652,11 +693,21 @@ void TcpClient::cancelSendFileDataActive()
 void TcpClient::cancelRecvFileDataActive()
 {
     //需要知道senderName和fileName
+    QString senderName;
+    QString fileName;
+    //TODO
+
+
+
+
+
+
+
     std::string senderNameString = QStringToString(senderName);
     std::string recvNameString = QStringToString(username);
     std::string fileNameString = QStringToString(fileName);
 
-    cancelFileTransferring(senderNameString, recvNameString, fileNameString, isSender = false);//GUI显示取消发送
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, false);//GUI显示取消发送
 
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
@@ -674,7 +725,7 @@ void TcpClient::cancelSendFileDataPassive()
     std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
 
-    cancelFileTransferring(senderNameString, recvNameString, fileNameString, isSender = true);//GUI显示取消发送
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
     
@@ -693,7 +744,7 @@ void TcpClient::cancelRecvFileDataPassive()
     std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
 
-    cancelFileTransferring(senderNameString, recvNameString, fileNameString, isSender = false);//GUI显示取消发送
+    cancelFileTransferring(senderNameString, recvNameString, fileNameString, false);//GUI显示取消发送
 
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
@@ -943,23 +994,6 @@ void TcpClient::InitRightLayout(){
     // stack
     rightStackLayout->addWidget(right);
 }
-
-
-
-// *****辅助函数***** //
-
-std::string QStringToString(const QString & myQstring)
-{
-    return std::string(myQstring.toLocal8Bit().constData());
-}
-
-std::string stringPadding(std::string myString, const unsigned int & len)
-{
-    myString.resize(len, 0);
-    return myString;
-}
-
-
 
 /********************slots*********************************/
 
@@ -1516,14 +1550,14 @@ void TcpClient::readyRead(){
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
 
-            case ://send收到取消接收包
+            case READ_C2C_FILE_NOTIFY_CANCEL_RECV://send收到取消接收包
                 my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
                 cancelSendFileDataPassive();//取消发送
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
 
-            case ://recv收到取消发送包
+            case READ_C2C_FILE_NOTIFY_CANCEL_SEND://recv收到取消发送包
                 my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
                 cancelRecvFileDataPassive();//取消接收
                 current_read_state = READ_PACKET_HEAD;

@@ -42,6 +42,8 @@ struct fileTrans
     FILE* fd = nullptr;
     int blockCnt = 0;
     int len = 0;
+    fileTrans() = default;
+    fileTrans(FILE* _fd, int _blockCnt, int _len) : fd(_fd), blockCnt(_blockCnt), len(_len) {}
 };
 
 class TcpClient : public QMainWindow
@@ -104,6 +106,9 @@ public:
     void tryToSend();
 
     void InitRightLayout();
+
+    void acceptRecv();
+
     void showTryToSend();
 
     void sendFileData();//发送数据包
