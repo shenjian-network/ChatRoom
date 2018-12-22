@@ -131,9 +131,6 @@ public:
 
     void writeDataAndRequest();//rec从包中获得数据并向send发送新的请求
 
-    void cancelSendFileDataActive();//send主动取消发送（GUI触发）
-
-
 
     void cancelSendFileDataPassive();//send被动取消发送，由对面的取消包触发
 
@@ -201,6 +198,8 @@ private slots:
     void acceptRecv();
 
     void cancelRecvFileDataActive();//recv主动取消发送 (GUI触发)
+
+    void cancelSendFileDataActive();//send主动取消发送（GUI触发）
 
 private:
     PacketHead my_packet_head;
