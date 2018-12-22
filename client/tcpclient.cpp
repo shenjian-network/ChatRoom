@@ -520,12 +520,16 @@ void TcpClient::showFileTransferring(std::string senderName, std::string recvNam
 void TcpClient::errorFileTransferring(std::string senderName, std::string recvName, std::string fileName)
 {
     //显示已经有文件正在发送，不能在这时候发送
+    errorGUI("传输错误");
+    pdlg->close();
 }
 
 //TODO
 void TcpClient::cancelFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender)
 {
     //显示文件已经被取消传输
+    errorGUI("传输取消");
+    pdlg->close();
 }
 
 //TODO
