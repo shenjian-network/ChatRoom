@@ -1095,19 +1095,19 @@ void TcpClient::readyRead(){
                     case PacketHead::kC2CFileNotify:
                         switch(my_packet_head.get_function_type())
                         {
-                            case kC2CFileNotifyRequest:
+                            case PacketHead::kC2CFileNotifyRequest:
                                 current_read_state = READ_C2C_FILE_NOTIFY_REQUEST;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kC2CFileNotifyCancelSend:
+                            case PacketHead::kC2CFileNotifyCancelSend:
                                 current_read_state = READ_C2C_FILE_NOTIFY_CANCEL_SEND;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kC2CFileNotifyAccept:
+                            case PacketHead::kC2CFileNotifyAccept:
                                 current_read_state = READ_C2C_FILE_NOTIFY_ACCEPT;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
-                            case kC2CFileNotifyCancelRecv:
+                            case PacketHead::kC2CFileNotifyCancelRecv:
                                 current_read_state = READ_C2C_FILE_NOTIFY_CANCEL_RECV;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;

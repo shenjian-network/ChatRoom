@@ -28,11 +28,11 @@ enum ReadState
     READ_SERVER_TO_CLIENT_TEXT_SIMPLE_TEXT,
     READ_SERVER_TO_CLIENT_TEXT_FILE_INFO,
     READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN,
-    READ_SERVER_TO_CLIENT_USER_SET_UPDATE，
-    READ_C2C_FILE_NOTIFY_REQUEST，
-    READ_C2C_FILE_NOTIFY_CANCEL_SEND，
-    READ_C2C_FILE_NOTIFY_ACCEPT，
-    READ_C2C_FILE_NOTIFY_CANCEL_RECV，
+    READ_SERVER_TO_CLIENT_USER_SET_UPDATE,
+    READ_C2C_FILE_NOTIFY_REQUEST,
+    READ_C2C_FILE_NOTIFY_CANCEL_SEND,
+    READ_C2C_FILE_NOTIFY_ACCEPT,
+    READ_C2C_FILE_NOTIFY_CANCEL_RECV,
     READ_C2C_FILE_DATA
 };
 
@@ -161,9 +161,9 @@ private:
     QString username;
     QString password;
     QString ip;
-    std::map<std::string, std::string> configData;
+    std::map<std::string, std::string> configMap;
     std::map<std::string, fileTrans> sendFile;
-    srd::map<std::string, fileTrans> recvFile;
+    std::map<std::string, fileTrans> recvFile;
     unsigned short port;
 
     ClickableLabel * preChatter; // 上一个与你对话的用户
