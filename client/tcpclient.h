@@ -7,6 +7,7 @@
 #include <QTime>
 #include <QVBoxLayout>
 #include <QStackedLayout>
+#include <map>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
@@ -27,7 +28,19 @@ enum ReadState
     READ_SERVER_TO_CLIENT_TEXT_SIMPLE_TEXT,
     READ_SERVER_TO_CLIENT_TEXT_FILE_INFO,
     READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN,
-    READ_SERVER_TO_CLIENT_USER_SET_UPDATE
+    READ_SERVER_TO_CLIENT_USER_SET_UPDATE，
+    READ_C2C_FILE_NOTIFY_REQUEST，
+    READ_C2C_FILE_NOTIFY_CANCEL_SEND，
+    READ_C2C_FILE_NOTIFY_ACCEPT，
+    READ_C2C_FILE_NOTIFY_CANCEL_RECV，
+    READ_C2C_FILE_DATA
+};
+
+struct fileTrans
+{
+    int fd;
+    int len;
+    int blockCnt;
 };
 
 class TcpClient : public QMainWindow
@@ -88,6 +101,8 @@ public:
     void showTextImpl(QString name, QString msg, QDateTime tm);
 
     void InitRightLayout();
+    void showTryToSend();
+
 private slots:
     // Signal func to handle read event
     //
@@ -144,7 +159,11 @@ private:
     QTime time;
 
     QString username;
+    QString password;
     QString ip;
+    std::map<std::string, std::string> configData;
+    std::map<std::string, fileTrans> sendFile;
+    srd::map<std::string, fileTrans> recvFile;
     unsigned short port;
 
     ClickableLabel * preChatter; // 上一个与你对话的用户

@@ -59,15 +59,17 @@ class ServerToClientText:public ServerToClientBase
 {
 public:
     ServerToClientText();
-    ServerToClientText(const PacketHead& ph,const char*uname,const char*ntime);
+    ServerToClientText(const PacketHead& ph,const char*frname,const char* toname,const char*ntime);
     ~ServerToClientText(){}
     void get_string(char* s);
     char* get_user_from_name();
+    char* get_user_to_name();
     char* get_now_time();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //PacketHead my_head;
     char user_from_name[33];
+    char user_to_name[33];
     char now_time[20];
 };
 /*文本信息发送：给一个用户发送文本消息*/
@@ -75,7 +77,7 @@ class ServerToClientTextSimpleText:public ServerToClientText
 {
 public:
     ServerToClientTextSimpleText();
-    ServerToClientTextSimpleText(const PacketHead& ph,const char*uname,const char*ntime,const char*scontain);
+    ServerToClientTextSimpleText(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*scontain);
     ~ServerToClientTextSimpleText();
     void get_string(char* s);
     char* get_simple_text_contain();
@@ -84,6 +86,7 @@ public:
 private:
     //PacketHead my_head;
     //char user_from_name[33];
+    //char user_to_name[33];
     //char now_time[20];
     char* simple_text_contain;
     int text_length;//该部分对于用户隐藏
@@ -93,7 +96,7 @@ class ServerToClientTextFileInfo:public ServerToClientText
 {
 public:
     ServerToClientTextFileInfo();
-    ServerToClientTextFileInfo(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey);
+    ServerToClientTextFileInfo(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*fname,const unsigned int fkey);
     ~ServerToClientTextFileInfo(){}
     void get_string(char* s);
     char* get_file_name();
@@ -102,6 +105,7 @@ public:
 private:
     //PacketHead my_head;
     //char user_from_name[33];
+    //char user_to_name[33];
     //char now_time[20];
     char file_name[65];
     unsigned int file_key;
@@ -111,7 +115,7 @@ class ServerToClientTextFileContain:public ServerToClientTextFileInfo
 {
 public:
     ServerToClientTextFileContain();
-    ServerToClientTextFileContain(const PacketHead& ph,const char*uname,const char*ntime,const char*fname,const unsigned int fkey,const char* fcontain);
+    ServerToClientTextFileContain(const PacketHead& ph,const char*frname,const char* toname,const char*ntime,const char*fname,const unsigned int fkey,const char* fcontain);
     ~ServerToClientTextFileContain();
     void get_string(char* s);
     char* get_file_contain();
@@ -121,6 +125,7 @@ public:
 private:
     //PacketHead my_head;
     //char user_from_name[33];
+    //char user_to_name[33];
     //char now_time[20];
     //char file_name[65];
     //unsigned int file_key;

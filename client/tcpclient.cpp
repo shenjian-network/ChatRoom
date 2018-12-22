@@ -2,6 +2,7 @@
 #include "ui_tcpclient.h"
 
 #include <string.h>
+#include <sstream>
 #include <QDialog>
 #include <QPushButton>
 #include <QHBoxLayout>
@@ -368,9 +369,28 @@ void TcpClient::showText(){
 
 }
 
+//TODO
+void TcpClient::showTryToSend()
+{
+    //receiver收到请求发送包，要显示出相关的文件信息，并提供相关的按钮（接收/取消），如果点击接收，那么要有是否覆盖的提示
+
+}
+
+
+
+
 // 设置配置 （TODO）
 void TcpClient::setConfig(){
+    std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
+    std::istringstream configDataStream(configData);
+    std::string configKey, configValue;
+    while(configDataStream >> configKey >> configValue)
+        configMap[configKey] = configValue;
 
+    //TODO
+    /*
+    根据configMap中的键值对来进行相应的设置
+    */
 }
 
 // 向用户列表中添加一项 （FINISHED)
@@ -665,6 +685,7 @@ void TcpClient::on_loginBtn_clicked()
     delete[] tmpStr;
 
     this->username = username;
+    this->password = password;
 }
 
 
@@ -1049,11 +1070,14 @@ void TcpClient::readyRead(){
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_INFO;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
+                            /*
+                                这个现在已经被notify替代了，相应的状态也不存在了
                             case PacketHead::kS2CTextFileContain:
                                 //文本内容包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN;
                                 current_byte_num_to_read = my_packet_head.get_length();
                                 break;
+                            */
                             case PacketHead::kS2CTextAskForClr:
                                 //清屏，这个时候状态机仍然处于等待下一个packet head读入的状态
                                 cls();
@@ -1062,10 +1086,38 @@ void TcpClient::readyRead(){
                                 qDebug() << "switch kS2CText my_packet_head.get_packet_type() case lost";
                         }
                         break;
+                    //收到用户设置包，进入相应的状态
                     case PacketHead::kS2CUserSet:
-//                        current_read_state = PacketHead::kS2CUserSetUpdate;
+                        current_read_state = READ_SERVER_TO_CLIENT_USER_SET_UPDATE;
                         current_byte_num_to_read = my_packet_head.get_length();
-                        setConfig();
+                        break;
+                    //在线文件通知包
+                    case PacketHead::kC2CFileNotify:
+                        switch(my_packet_head.get_function_type())
+                        {
+                            case kC2CFileNotifyRequest:
+                                current_read_state = READ_C2C_FILE_NOTIFY_REQUEST;
+                                current_byte_num_to_read = my_packet_head.get_length();
+                                break;
+                            case kC2CFileNotifyCancelSend:
+                                current_read_state = READ_C2C_FILE_NOTIFY_CANCEL_SEND;
+                                current_byte_num_to_read = my_packet_head.get_length();
+                                break;
+                            case kC2CFileNotifyAccept:
+                                current_read_state = READ_C2C_FILE_NOTIFY_ACCEPT;
+                                current_byte_num_to_read = my_packet_head.get_length();
+                                break;
+                            case kC2CFileNotifyCancelRecv:
+                                current_read_state = READ_C2C_FILE_NOTIFY_CANCEL_RECV;
+                                current_byte_num_to_read = my_packet_head.get_length();
+                                break;
+                            default:
+                                qDebug() << "switch kC2CFileNotify my_packet_head.get_packet_type() case lost";
+                        }
+                        break;
+                    case PacketHead::kC2CFileData:
+                        current_read_state = READ_C2C_FILE_DATA;
+                        current_byte_num_to_read = my_packet_head.get_length();
                         break;
                     default:
                         qDebug() << "switch my_packet_head.get_packet_type() case lost";
@@ -1095,18 +1147,22 @@ void TcpClient::readyRead(){
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
-            case READ_SERVER_TO_CLIENT_TEXT_FILE_INFO://收到文件相关信息，将相应信息放入报头，然后显示文件信息
+            case READ_SERVER_TO_CLIENT_TEXT_FILE_INFO://收到文件相关信息，将相应信息放入报头，然后显示文件信息,这一步只有回看的时候收到
                 my_server_to_client_file_info.set_string(my_packet_head, set_byte_array.constData());
                 showFileInfo();
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
+            /*
+            这一步不需要了，被notify包所取代
             case READ_SERVER_TO_CLIENT_TEXT_FILE_CONTAIN://收到文件内容信息，将相应信息放入报头，然后进行下载操作
                 my_server_to_client_text_file_contain.set_string(my_packet_head, set_byte_array.constData());
                 writeFileContain();
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
+            */
+            
             case READ_SERVER_TO_CLIENT_USER_SET_UPDATE://收到设置用户信息，将相应信息放入报头，然后做相应的设置操作
                 my_server_to_client_user_set_update.set_string(my_packet_head, set_byte_array.constData());
                 setConfig();

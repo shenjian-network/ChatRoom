@@ -117,14 +117,16 @@ class ClientToServerTextAskForTexts:public ClientToServerBase
 {
 public:
     ClientToServerTextAskForTexts();
-    ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum);
+    ClientToServerTextAskForTexts(const PacketHead& ph,const int& lnum,const char* ouser);
     virtual ~ClientToServerTextAskForTexts(){}
     void get_string(char* s);
     unsigned int get_list_num();
+    char* get_op_user();
     void set_string(const PacketHead& ph,const char* s);  
 private:
     //packetHead myHead;
     unsigned int list_num;
+    char op_user[32];
 };
 /*更改设置*/
 class ClientToServerUserSetUpdate:public ClientToServerBase
@@ -140,5 +142,41 @@ public:
 private:
     //packetHead myHead;
     char* user_set_data;
+};
+/*一对一在线传文件*/
+/*通知包*/
+class SenderToReceiverFileNotify:public ClientToServerBase{
+public: 
+    SenderToReceiverFileNotify();
+    SenderToReceiverFileNotify(const PacketHead& ph,const char* sn,const char* rn,const char* fn,unsigned int fs);
+    virtual void get_string(char* s);//need 140
+    char* get_sender_name();
+    char* get_receiver_name();
+    char* get_file_name();
+    unsigned int get_file_size();
+    unsigned int get_block_num();
+    virtual void set_string(const PacketHead& ph,const char* s);
+private:
+    //packetHead myHead;
+    char sender_name[32];
+    char receiver_name[32];
+    char file_name[64];
+    unsigned int file_size;// as block_num
+};
+/*数据包*/
+class SenderToReceiverFileData:public SenderToReceiverFileNotify{
+public: 
+    SenderToReceiverFileData();
+    SenderToReceiverFileData(const PacketHead& ph,const char* sn,const char* rn,const char* fn,unsigned int bn,const char* fc);
+    char* get_file_contain();
+    void get_string(char* s);// need 4096
+    void set_string(const PacketHead& ph,const char* s);
+private: 
+    //packetHead myHead;
+    // char sender_name[32];
+    // char receiver_name[32];
+    // char file_name[64];
+    // unsigned int file_size;// as block_num
+    char file_contain[FILEBUFFERSIZE];
 };
 #endif
