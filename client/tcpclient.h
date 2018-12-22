@@ -98,7 +98,7 @@ public:
 
     void setUserStatus(QString name, bool isOnline);
 
-    void showTextImpl(QString name, QString msg, QDateTime tm);
+    void showTextImpl(QString name, QString msg, QString tm);
 
     void InitRightLayout();
     void showTryToSend();
