@@ -1,4 +1,4 @@
-﻿#include "tcpclient.h"
+#include "tcpclient.h"
 #include "ui_tcpclient.h"
 
 #include <cstdio>
@@ -69,6 +69,7 @@ bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
     this->port = port;
 
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::QueuedConnection);
+    connect(socket, SIGNAL(disconnected()), this, SLOT(clientDisconnected()), Qt::QueuedConnection);
 
     qDebug() << "connecting...";
     socket->connectToHost(ip, port);
@@ -209,10 +210,8 @@ void TcpClient::errorGUI(const unsigned short & err_type){
 
 // 显示错误信息窗口，重载 （FINISHED）
 void TcpClient::errorGUI(const QString& err){
-    QMessageBox *errorBox = new QMessageBox();
-    errorBox->setWindowTitle("错误");
-    errorBox->setText(err);
-    errorBox->show();
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::information(this, tr("错误"), err);
 }
 
 
@@ -233,7 +232,7 @@ void TcpClient::chatRoomGUI(){
     config->setStyleSheet("QPushButton{background: rgb(46, 50, 56); color: white;}");
     leftLayout->addWidget(config);
 
-    connect(config, SIGNAL(clicked()), this, SLOT(configGUI()));
+    connect(config, SIGNAL(clicked()), this, SLOT(configGUI()), Qt::QueuedConnection);
 
     QHBoxLayout * subsublayout1 = new QHBoxLayout;
     QLabel * curUserLabel = new QLabel("     当前用户");
@@ -352,11 +351,10 @@ void TcpClient::askForReview(){
 
     //TODO
     /*获得toUser*/
-
-
-
-
-
+    toUser = QStringToString(curChatter->text());
+    if(toUser == "群聊"){
+        toUser = "";
+    }
 
     //发送配置文件包
     PacketHead sendPacketHead;
@@ -390,21 +388,42 @@ void TcpClient::configGUI(){
     configWindow->setFixedSize(500, 300);
 
     QVBoxLayout * layout = new QVBoxLayout;
-    QLabel * label = new QLabel("回看数");
-    QLineEdit * value = new QLineEdit;
-    value->setValidator(new QIntValidator(10, 100, this));
-    layout->addWidget(label);
-    layout->addWidget(value);
 
-    QHBoxLayout * sublayout = new QHBoxLayout;
+    QHBoxLayout * sublayout1 = new QHBoxLayout;
+    QLabel * label1 = new QLabel("回看数");
+    QLineEdit * value1 = new QLineEdit;
+    value1->setValidator(new QIntValidator(100, 200, this));
+    sublayout1->addWidget(label1);
+    sublayout1->addWidget(value1);
+
+    QHBoxLayout * sublayout2 = new QHBoxLayout;
+    QLabel * label2 = new QLabel("字体大小");
+    QLineEdit * value2 = new QLineEdit;
+    value2->setValidator(new QIntValidator(4, 24, this));
+    sublayout2->addWidget(label2);
+    sublayout2->addWidget(value2);
+
+
+    QHBoxLayout * sublayout3 = new QHBoxLayout;
+    QLabel * label3 = new QLabel("字体颜色");
+    QLineEdit * value3 = new QLineEdit;
+    value3->setValidator(new QIntValidator(0, 7, this));
+    sublayout3->addWidget(label3);
+    sublayout3->addWidget(value3);
+
+
+    QHBoxLayout * sublayout4 = new QHBoxLayout;
     QPushButton * ack = new QPushButton("确定");
     ack->setFixedSize(75, 30);
-    sublayout->addWidget(ack);
+    sublayout4->addWidget(ack);
 
-    layout->addLayout(sublayout);
+    layout->addLayout(sublayout1);
+    layout->addLayout(sublayout2);
+    layout->addLayout(sublayout3);
+    layout->addLayout(sublayout4);
     configWindow->setLayout(layout);
 
-    connect(ack, SIGNAL(clicked()), this, SLOT(sendConfig()));
+    connect(ack, SIGNAL(clicked()), this, SLOT(sendConfig()), Qt::QueuedConnection);
     configWindow->show();
 }
 
@@ -416,8 +435,9 @@ void TcpClient::offline(){
 
     // 1. 下线的是自己，代表被T了
     if(name == this->username){
-        errorGUI("您已被踢出群聊");
-        exit(EXIT_FAILURE); //好像不够安全，没做析构
+        chatRoomWindow->close();
+        errorGUI("您被T了");
+        exit(1);
     } else{
         setUserStatus(name, false);
     }
@@ -433,7 +453,11 @@ void TcpClient::online(){
 
 // 清屏，清除对话框的内容 （TODO）
 void TcpClient::cls(){
+    QWidget* cur = rightStackLayout->currentWidget();
+    QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
+    curTextBrowser->clear();
 
+    askForReview();
 }
 
 // 显示文本 （TODO）
@@ -453,7 +477,11 @@ void TcpClient::showText(){
         curTextBrowser->append(QString(from) + " <" + QString(time) + "> ");
         curTextBrowser->append(QString(text));
     }else{
-        showTextImpl(QString(from), QString(text), QString(time));
+        if(QString(from) == username){
+            showTextImpl(QString(to), QString(text), QString(time), true);
+        }else{
+            showTextImpl(QString(from), QString(text), QString(time));
+        }
     }
 }
 
@@ -847,8 +875,9 @@ std::string TcpClient::configString()
     ret += singleConfigString("reviewLineCnt");
     //TODO
     /*增加其他的配置项*/
+    ret += singleConfigString("fontsize");
 
-
+    ret += singleConfigString("fontcolor");
 
     return ret;
 }
@@ -856,13 +885,31 @@ std::string TcpClient::configString()
 //发送配置更新包
 void TcpClient::sendConfig()
 {
+    QLineEdit* line1 = static_cast<QLineEdit*>(configWindow->layout()->itemAt(0)->layout()->itemAt(1)->widget());
+    qDebug() << line1->text();
+    configMap["reviewLineCnt"] = QStringToString(line1->text());
+
+    QLineEdit* line2 = static_cast<QLineEdit*>(configWindow->layout()->itemAt(1)->layout()->itemAt(1)->widget());
+    qDebug() << line2->text();
+    configMap["fontsize"] = QStringToString(line2->text());
+
+    QLineEdit* line3 = static_cast<QLineEdit*>(configWindow->layout()->itemAt(2)->layout()->itemAt(1)->widget());
+    qDebug() << line3->text();
+    configMap["fontcolor"] = QStringToString(line3->text());
+
+    // 真正的设置
+    setConfigImpl(line2->text().toInt(), line3->text().toInt());
+
     configWindow->close();
+
     PacketHead sendPacketHead;
 
     sendPacketHead.set_packet_type(PacketHead::kC2SUserSet);
     sendPacketHead.set_function_type(PacketHead::kC2SUserSetUpdate);
 
     std::string myConfigString = configString();
+//    printf(myConfigString.c_str());
+//    fflush(stdout);
 
     sendPacketHead.set_length(myConfigString.length());
 
@@ -878,15 +925,25 @@ void TcpClient::sendConfig()
 //根据初始发送配置包的内容进行设置配置 （TODO）
 void TcpClient::setConfig(){
     std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
+    printf(configData.c_str());
+
     std::istringstream configDataStream(configData);
     std::string configKey, configValue;
     while(configDataStream >> configKey >> configValue)
         configMap[configKey] = configValue;
 
+    for(auto item: configMap){
+        printf("%s, %s\n", item.first.c_str(), item.second.c_str());
+        fflush(stdout);
+    }
+
+
     //TODO
     /*
     根据configMap中的键值对来进行相应的设置
     */
+    setConfigImpl(atoi(configMap["fontsize"].c_str()), atoi(configMap[configKey].c_str()));
+
 }
 
 // 向用户列表中添加一项 （FINISHED)
@@ -1044,6 +1101,10 @@ void TcpClient::reportSuccess(){
         line->clear(); // 清空密码就行了
     }
     else{ // 1. 登录成功包
+        if(my_server_to_client_report_success.get_packet_head().get_function_type() == PacketHead::kS2CReportSuccessDup){
+            errorGUI("您把别人T了");
+        }
+
         qDebug() << "登录成功" << this->username;
         loginWindow->close();
         chatRoomGUI();
@@ -1075,9 +1136,12 @@ void TcpClient::writeFileContain(){
 
 
 // 显示消息，带GUI
-void TcpClient::showTextImpl(QString name, QString msg, QString tm){
+void TcpClient::showTextImpl(QString name, QString msg, QString tm, bool isMyself){
     QWidget * cur = rightStackLayout->itemAt(user2Index[name])->widget();
     QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
+    if(isMyself){
+        name = username;
+    }
     curTextBrowser->append(name + " <" + tm + "> ");
     curTextBrowser->append(msg);
 }
@@ -1119,8 +1183,18 @@ void TcpClient::InitRightLayout(){
     send->setFixedSize(95, 30);
     send->setGeometry(415, 130, 95, 30);
     send->setParent(textEditArea);
+    send->setShortcut(Qt::Key_F1);
 
     connect(send, SIGNAL(clicked()),  this, SLOT(on_sendBtn_clicked()), Qt::QueuedConnection);
+
+
+    QPushButton * review = new QPushButton("Review");
+    review->setStyleSheet("QPushButton:hover{background: rgb(248, 248, 248);}");
+    review->setFixedSize(95, 30);
+    review->setGeometry(300, 130, 95, 30);
+    review->setParent(textEditArea);
+
+    connect(review, SIGNAL(clicked()),  this, SLOT(cls()), Qt::QueuedConnection);
 
     rightLayout->addWidget(textEditArea);
     rightLayout->setStretchFactor(textfield, 2);
@@ -1132,6 +1206,21 @@ void TcpClient::InitRightLayout(){
     // stack
     rightStackLayout->addWidget(right);
 }
+
+
+void TcpClient::setConfigImpl(int fontsize, int color){
+    int num = rightStackLayout->count();
+    QWidget* cur;
+    QTextBrowser* curTextBrowser;
+    for(int i = 1;i < num; ++i){
+        cur = rightStackLayout->itemAt(i)->widget();
+        qDebug() << cur->layout()->count();
+        curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
+        curTextBrowser->setStyleSheet("font-size: " + QString::number(fontsize)
+                                      + "px;" + "color: " + COLOR[color] + ";");
+    }
+}
+
 
 /********************slots*********************************/
 
@@ -1294,7 +1383,7 @@ void TcpClient::on_sendBtn_clicked(){
 
 
 // 断线处理 (FINISHED)
-void TcpClient::disconnected(){
+void TcpClient::clientDisconnected(){
     qDebug() << "您断线了，请检查网络设置";
     errorGUI("您断线了，请检查网络设置");
 }
@@ -1581,6 +1670,7 @@ void TcpClient::readyRead(){
                         switch(my_packet_head.get_function_type())
                         {
                             case PacketHead::kS2CTextSimpleText:
+                                qDebug() << "get here";
                                 //文本信息包
                                 current_read_state = READ_SERVER_TO_CLIENT_TEXT_SIMPLE_TEXT;
                                 current_byte_num_to_read = my_packet_head.get_length();
@@ -1600,7 +1690,7 @@ void TcpClient::readyRead(){
                             */
                             case PacketHead::kS2CTextAskForClr:
                                 //清屏，这个时候状态机仍然处于等待下一个packet head读入的状态
-                                cls();
+                                // cls();
                                 break;// two conditions... if it is myself, yor'are out; if it is other, modify GUI
                             default:
                                 qDebug() << "switch kS2CText my_packet_head.get_packet_type() case lost";

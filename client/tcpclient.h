@@ -37,6 +37,9 @@ enum ReadState
     READ_C2C_FILE_DATA
 };
 
+
+const QString COLOR[8] = {"black", "red", "grey", "blue", "green", "yellow", "orange", "purple"};
+
 struct fileTrans
 {
     FILE* fd = nullptr;
@@ -78,7 +81,7 @@ public:
     // only one condition
     void online();
 
-    void cls();
+
 
     void showText();
 
@@ -88,8 +91,6 @@ public:
     //将文件内容从包写入文件，注意在调用该函数前，文件内容已经被写入了ServerToClientTextFileContain包，因此这部分只要显示下载文件完成等即可
     void writeFileContain();
 
-    //发送请求回看包
-    void askForReview();
 
     //单个配置对应的一行String
     std::string singleConfigString(std::string configKey);
@@ -112,7 +113,7 @@ public:
 
     void setUserStatus(QString name, bool isOnline);
 
-    void showTextImpl(QString name, QString msg, QString tm);
+    void showTextImpl(QString name, QString msg, QString tm, bool isMyself=false);
 
     void tryToSend();
 
@@ -142,13 +143,15 @@ public:
 
     void doneFileTransferring(std::string senderName, std::string recvName, std::string fileName, bool isSender);
 
+    void setConfigImpl(int fontsize, int color);
+
 private slots:
     // Signal func to handle read event
     //
     void readyRead();
 
     // Signal func to handle disconnection with Server
-    void disconnected();
+    void clientDisconnected();
 
     // login func
     // send a packet containing and wait
@@ -182,6 +185,11 @@ private slots:
 
     //向server发送配置包
     void sendConfig();
+
+    void cls();
+
+    //发送请求回看包
+    void askForReview();
 
 private:
     PacketHead my_packet_head;
@@ -218,6 +226,8 @@ private:
     QHBoxLayout * chatRoomMainLayout;
     QMap <QString, int> user2Index;
     int curIndex;
+    bool isOnline;
+
 };
 
 #endif // TCPCLIENT_H
