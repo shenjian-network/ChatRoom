@@ -233,6 +233,8 @@ void TcpClient::chatRoomGUI(){
     config->setStyleSheet("QPushButton{background: rgb(46, 50, 56); color: white;}");
     leftLayout->addWidget(config);
 
+    connect(config, SIGNAL(clicked()), this, SLOT(configGUI()));
+
     QHBoxLayout * subsublayout1 = new QHBoxLayout;
     QLabel * curUserLabel = new QLabel("     当前用户");
     QLineEdit * curUsername = new QLineEdit(this->username);
@@ -374,7 +376,7 @@ void TcpClient::askForReview(){
     ClientToServerTextAskForTexts sendClientToServerTextAskForTexts(sendPacketHead, 
         atoi(configMap["reviewLineCnt"].c_str()), stringPadding(toUser, 32).c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerTextAskForTexts.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -384,7 +386,26 @@ void TcpClient::askForReview(){
 // 配置界面 （TODO）
 //下面有个确定键，点击后，会更改GUI界面，并触发槽函数sendConfig
 void TcpClient::configGUI(){
+    configWindow = new QWidget;
+    configWindow->setFixedSize(500, 300);
 
+    QVBoxLayout * layout = new QVBoxLayout;
+    QLabel * label = new QLabel("回看数");
+    QLineEdit * value = new QLineEdit;
+    value->setValidator(new QIntValidator(10, 100, this));
+    layout->addWidget(label);
+    layout->addWidget(value);
+
+    QHBoxLayout * sublayout = new QHBoxLayout;
+    QPushButton * ack = new QPushButton("确定");
+    ack->setFixedSize(75, 30);
+    sublayout->addWidget(ack);
+
+    layout->addLayout(sublayout);
+    configWindow->setLayout(layout);
+
+    connect(ack, SIGNAL(clicked()), this, SLOT(sendConfig()));
+    configWindow->show();
 }
 
 
@@ -540,7 +561,7 @@ void TcpClient::tryToSend()
             stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
             stringPadding(fileNameString, 64).c_str(), fileLen);
 
-        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
         sendSenderToReceiverFileNotify.get_string(tmpStr);
         socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -608,7 +629,7 @@ void TcpClient::acceptRecv()
         stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
         stringPadding(fileNameString, 64).c_str(), 0);
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     recvSenderToReceiverFileNotify.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -634,7 +655,7 @@ void TcpClient::sendFileData()
     
     auto myFileTrans = sendFile[sendFileKey];
 
-    char* fileContain = new char [FILEBUFFERSIZE];
+    char* fileContain = new char [FILEBUFFERSIZE + 1];
     unsigned int readSize = fread(fileContain, 1, FILEBUFFERSIZE, myFileTrans.fd);
 
     PacketHead sendPacketHead;
@@ -656,7 +677,7 @@ void TcpClient::sendFileData()
         stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
         stringPadding(fileNameString, 64).c_str(), blockCnt, fileContain);
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     senderToReceiverFileData.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -700,7 +721,7 @@ void TcpClient::writeDataAndRequest()
             stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
             stringPadding(fileNameString, 64).c_str(), blockCnt);
 
-        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+        char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
         recvSenderToReceiverFileNotify.get_string(tmpStr);
         socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -835,6 +856,7 @@ std::string TcpClient::configString()
 //发送配置更新包
 void TcpClient::sendConfig()
 {
+    configWindow->close();
     PacketHead sendPacketHead;
 
     sendPacketHead.set_packet_type(PacketHead::kC2SUserSet);
@@ -846,7 +868,7 @@ void TcpClient::sendConfig()
 
     ClientToServerUserSetUpdate sendClientToServerUserSetUpdate(sendPacketHead, myConfigString.c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerUserSetUpdate.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -1153,7 +1175,7 @@ void TcpClient::on_loginBtn_clicked()
     ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
         stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerReportLogin.get_string(tmpStr);
      socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -1205,7 +1227,7 @@ void TcpClient::on_signupBtn_clicked()
     ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
         stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerReportLogin.get_string(tmpStr);
      socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -1248,9 +1270,9 @@ void TcpClient::on_sendBtn_clicked(){
 
     //获取用户名对应的二维数组
     char **uinfo = new char*[1];
-    uinfo[0] = new char[32];
+    uinfo[0] = new char[32 + 1];
     if(curChatter->text() == "群聊") {
-        memset(uinfo[0], 0, sizeof(uinfo[0]));
+        memset(uinfo[0], 0, 32);
     }else{
         strncpy(uinfo[0], stringPadding(QStringToString(curChatter->text()), 32).c_str(), 32);
     }
@@ -1259,7 +1281,7 @@ void TcpClient::on_sendBtn_clicked(){
     ClientToServerTextToUsers sendClientToServerTextToUsers(sendPacketHead,
         1, uinfo, textString.c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerTextToUsers.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -1392,7 +1414,7 @@ void TcpClient::on_changePwdAckBtn_clicked(){
     ClientToServerReportUpdate sendClientToServerReportUpdate(sendPacketHead,
         stringPadding(userString, 32).c_str(), stringPadding(originalPwdString, 32).c_str(), stringPadding(newPwdString, 32).c_str());
 
-    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length()];
+    char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendClientToServerReportUpdate.get_string(tmpStr);
      socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
 
@@ -1687,7 +1709,9 @@ void TcpClient::readyRead(){
                 writeDataAndRequest();//写数据并发送请求用户发送包
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
-                break;
+                break;    void on_configAckBtn_clicked();
+
+                void on_configCancelBtn_clicked();
 
             case READ_C2C_FILE_NOTIFY_CANCEL_RECV://send收到取消接收包
                 my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
@@ -1708,4 +1732,5 @@ void TcpClient::readyRead(){
         }
     }
 }
+
 

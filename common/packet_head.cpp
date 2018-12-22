@@ -10,11 +10,11 @@ PacketHead::PacketHead(const unsigned short p,const unsigned short f,const unsig
     function_type=f;
     length=l;
 }
-unsigned short PacketHead::get_packet_type()
+unsigned short PacketHead::get_packet_type() 
 {
     return packet_type;
 }
-unsigned short PacketHead::get_function_type()
+unsigned short PacketHead::get_function_type() 
 {
     return function_type;
 }
