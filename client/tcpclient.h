@@ -5,9 +5,13 @@
 #include <QTcpSocket>
 #include <QListWidget>
 #include <QTime>
+#include <QVBoxLayout>
+#include <QStackedLayout>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
 #include "common/server_to_client.h"
+#include "clickablelabel.h"
+
 
 namespace Ui {
 class TcpClient;
@@ -48,7 +52,7 @@ public:
 
     void reportSuccess();
 
-    void chatRoomGUI();
+    void chatRoomGUI();  //聊天室新窗口
 
     void configGUI();
 
@@ -83,6 +87,7 @@ public:
 
     void showTextImpl(QString name, QString msg, QDateTime tm);
 
+    void InitRightLayout();
 private slots:
     // Signal func to handle read event
     //
@@ -113,6 +118,9 @@ private slots:
     // 登录界面，显示密码
     void on_showPwdCheckBox_stateChanged();
 
+    // 点击用户触发函数
+    void userLabelClicked();
+
     // 更新时间
     void timeUpdate();
 
@@ -139,6 +147,12 @@ private:
     QString ip;
     unsigned short port;
 
+    ClickableLabel * preChatter; // 上一个与你对话的用户
+    QLabel * curChatter; // 现在与你对话的用户
+    QStackedLayout * rightStackLayout; // 现在与你对话的用户的聊天窗
+    QHBoxLayout * chatRoomMainLayout;
+    QMap <QString, int> user2Index;
+    int curIndex;
 };
 
 #endif // TCPCLIENT_H
