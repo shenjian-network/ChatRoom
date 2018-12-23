@@ -22,7 +22,7 @@
 #include <QFile>
 #include <QPlainTextEdit>
 #include <QFileDialog>
-
+#include <QHostInfo>
 
 TcpClient::TcpClient(QWidget *parent) :
     QMainWindow(parent),
@@ -57,6 +57,10 @@ TcpClient::TcpClient(QWidget *parent) :
     timer->start(1000); // 每次发射timeout信号时间间隔为1秒
     connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()), Qt::QueuedConnection);
     time.start();
+
+
+
+
 }
 
 TcpClient::~TcpClient()
@@ -84,10 +88,19 @@ bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
     }
 
     qDebug() << "connect success";
+    connect(&mgr, &QNetworkConfigurationManager::onlineStateChanged,this, [=](bool isOnline){
+        qDebug()<<"网络已经更改"<<isOnline;
+    });
     return true;
 }
 
-
+bool TcpClient::isConnected(){
+    QHostInfo info = QHostInfo::fromName("www.baidu.com");
+      if(info.addresses().isEmpty())
+          return false;
+      else
+          return true;
+}
 
 // 显示登录界面 (FINISHED)
 void TcpClient::loginGUI(){
@@ -778,7 +791,6 @@ void TcpClient::sendFileData()
         blockCnt = 0xFFFF;
         fclose(myFileTrans.fd);
         sendFile.erase(sendFileKey);
-        doneFileTransferring(senderNameString, recvNameString, fileNameString, true);
     }
     else{
         sendFile[sendFileKey].blockCnt = blockCnt;
@@ -794,6 +806,10 @@ void TcpClient::sendFileData()
 
     delete[] tmpStr;
     delete[] fileContain;
+
+    if(blockCnt == 0xFFFF){
+        doneFileTransferring(senderNameString, recvNameString, fileNameString, true);
+    }
 }
 
 void TcpClient::writeDataAndRequest()
@@ -870,27 +886,26 @@ void TcpClient::cancelSendFileDataActive()
     /*向对面发送取消发送包*/
 
     PacketHead sendPacketHead;
-    qDebug() << "1";
+
     sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
     sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyCancelSend);  //注册
     sendPacketHead.set_length(132);
     int fileLen = sendFile[sendFileKey].len;
-    qDebug() << "2";
+
     SenderToReceiverFileNotify sendSenderToReceiverFileNotify(sendPacketHead,
             stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
             stringPadding(fileNameString, 64).c_str(), fileLen);
-    qDebug() << "3";
+
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendSenderToReceiverFileNotify.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
-    qDebug() << "4";
+
     delete[] tmpStr;
 
     /*发送完成*/
-    qDebug() << "5";
+
     fclose(sendFile[sendFileKey].fd);
     sendFile.erase(sendFileKey);
-    qDebug() << "6";
 }
 
 //主动取消接收
@@ -1665,30 +1680,25 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
 
  // 更新时间 （FINISHED）
 void TcpClient::timeUpdate(){
-    if(chatRoomWindow && isOnline){
+    if(chatRoomWindow){
         QLineEdit* line = static_cast<QLineEdit*>(chatRoomWindow->layout()->itemAt(0)->
                                                   layout()->itemAt(5)->layout()->itemAt(1)->widget());
         line->setText(QString::number(time.elapsed() / 1000));
     }
 
-    QNetworkConfigurationManager mgr;
-    qDebug() << mgr.isOnline();
-    if(!mgr.isOnline()){
+    if(!isConnected()){
+        if(isOnline){
+            errorGUI("您断网了");
+        }
         isOnline = false;
-        QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->layout()->children().at(5));
-        QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
-        line->setText("已离线");
-        errorGUI("wifi断开");
+        // TODO 我离线了
     }else{
         if(!isOnline){
             isOnline = true;
-            QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->layout()->children().at(5));
-            QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
-            line->setText("我在线上");
-            errorGUI("wifi重新连接");
-
+            errorGUI("您重新连上了网");
         }
     }
+
 }
 
 

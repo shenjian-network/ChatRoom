@@ -22,7 +22,7 @@ class TcpClient;
 }
 
 const unsigned int kPacketHeadLen = 8;
-const unsigned int kFileDataLen = 4096;
+const unsigned int kFileDataLen = 4096 + 99 * 1024;
 enum ReadState
 {
     READ_PACKET_HEAD,
@@ -149,6 +149,9 @@ public:
 
     void setEnableFileTransfer(bool isEnable);
 
+
+    bool isConnected();
+
 private slots:
     // Signal func to handle read event
     //
@@ -247,7 +250,7 @@ private:
     QString recvName;
     QString fileName;
     int fileLen;
-
+    QNetworkConfigurationManager mgr;
     bool isOnline;
 };
 
