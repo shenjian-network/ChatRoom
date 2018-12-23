@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QStackedLayout>
 #include <QProgressDialog>
+#include <QNetworkConfigurationManager>
 #include <map>
 #include "common/client_to_server.h"
 #include "common/packet_head.h"
@@ -146,6 +147,8 @@ public:
 
     void setConfigImpl(int fontsize, int color);
 
+    void setEnableFileTransfer(bool isEnable);
+
 private slots:
     // Signal func to handle read event
     //
@@ -237,13 +240,15 @@ private:
     QHBoxLayout * chatRoomMainLayout;
     QMap <QString, int> user2Index;
     int curIndex;
-    bool isOnline;
+
     QProgressDialog* pdlg;
 
     QString senderName;
     QString recvName;
     QString fileName;
     int fileLen;
+
+    bool isOnline;
 };
 
 #endif // TCPCLIENT_H

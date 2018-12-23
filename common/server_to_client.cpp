@@ -294,7 +294,7 @@ void ServerToClientUserSetUpdate::set_string(const PacketHead& ph,const char* s)
     ServerToClientBase::set_string(ph,s);
     int ulength=ph.get_length();
     user_set_data=new char[ulength+1];
-    memcpy(user_set_data,s+8,ulength);
+    memcpy(user_set_data,s,ulength);
     user_set_data[ulength]=0;   
 } 
 //TODO

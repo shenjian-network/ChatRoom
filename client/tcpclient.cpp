@@ -43,6 +43,7 @@ TcpClient::TcpClient(QWidget *parent) :
     curChatter->setAlignment(Qt::AlignCenter);
     curChatter->setFixedHeight(50);
     curChatter->setStyleSheet("background: white; color: black;border-bottom: 1px solid rgb(230, 230, 255);");
+    isOnline = true;
 
     QFont ft;
     ft.setPointSize(15);
@@ -446,6 +447,12 @@ void TcpClient::offline(){
         errorGUI("您被T了");
         exit(1);
     } else{
+        if(recvFile.size()){
+            if(senderName == name){
+                cancelRecvFileDataPassive();
+            }
+        }
+
         setUserStatus(name, false);
     }
 }
@@ -492,6 +499,21 @@ void TcpClient::showText(){
     }
 }
 
+
+void TcpClient::setEnableFileTransfer(bool isEnable){
+    int num = rightStackLayout->count();
+    QWidget* cur;
+    QPushButton* button;
+    for(int i = 1;i < num; ++i){
+        cur = rightStackLayout->itemAt(i)->widget();
+        qDebug() << cur->layout()->itemAt(1)->widget()->children().count();
+        button = static_cast<QPushButton*>(cur->layout()->itemAt(2)->widget()->children().at(3));
+        button->setEnabled(isEnable);
+    }
+}
+
+
+
 std::string getKey(std::string senderNameString, std::string recvNameString, std::string fileNameString)
 {
     return stringPadding(senderNameString, 32) + stringPadding(recvNameString, 32) + stringPadding(fileNameString, 64);
@@ -529,6 +551,7 @@ void TcpClient::errorFileTransferring(std::string senderName, std::string recvNa
     //显示已经有文件正在发送，不能在这时候发送
     errorGUI("传输错误");
     pdlg->close();
+
 }
 
 //TODO
@@ -537,15 +560,20 @@ void TcpClient::cancelFileTransferring(std::string senderName, std::string recvN
     //显示文件已经被取消传输
     errorGUI("传输取消");
     if(pdlg){
+        qDebug() << pdlg;
         pdlg->close();
         delete pdlg;
         pdlg = nullptr;
+        qDebug() << "pdlg delete successfully";
     }
     if(fileWindow){
+        qDebug() << fileWindow;
         fileWindow->close();
         delete fileWindow;
         fileWindow = nullptr;
+        qDebug() << "fileWindow delete successfully";
     }
+    setEnableFileTransfer(true);
 }
 
 //TODO
@@ -554,6 +582,7 @@ void TcpClient::doneFileTransferring(std::string senderName, std::string recvNam
     //显示文件传输完成
     pdlg->setValue(100);
     successGUI("传输完成");
+    setEnableFileTransfer(true);
 }
 
 
@@ -574,7 +603,8 @@ void TcpClient::tryToSend(QString fileName)
     /*
     点击发送文件的按钮触发的事件,首先需要获得接收方用户名recvName, 文件名fileName
     */
-    QString recvName = curChatter->text();
+    recvName = curChatter->text();
+    this->fileName = fileName;
 
     qDebug() << "要发送的文件" << fileName;
     qDebug() << "发送的用户" << recvName;
@@ -591,6 +621,8 @@ void TcpClient::tryToSend(QString fileName)
 
     qDebug() << "文件长度" << fileLen;
     
+    setEnableFileTransfer(false);
+
     /*
     首先在sendFile这个Map中查看是否存在，如果存在则说明正在发送，弹窗显示不能继续发送,
     否则向对端发送一个请求发送包
@@ -825,36 +857,40 @@ void TcpClient::cancelSendFileDataActive()
     std::string recvNameString = QStringToString(recvName);
     std::string fileNameString = QStringToString(fileName);
 
+    qDebug() << recvName;
+    qDebug() << fileName;
+
     cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
-    
+
     if(sendFile.find(sendFileKey) == sendFile.end())
         return;
-    
+
     /*向对面发送取消发送包*/
 
     PacketHead sendPacketHead;
-
+    qDebug() << "1";
     sendPacketHead.set_packet_type(PacketHead::kC2CFileNotify);
     sendPacketHead.set_function_type(PacketHead::kC2CFileNotifyCancelSend);  //注册
     sendPacketHead.set_length(132);
     int fileLen = sendFile[sendFileKey].len;
-
+    qDebug() << "2";
     SenderToReceiverFileNotify sendSenderToReceiverFileNotify(sendPacketHead,
             stringPadding(senderNameString, 32).c_str(), stringPadding(recvNameString, 32).c_str(),
             stringPadding(fileNameString, 64).c_str(), fileLen);
-
+    qDebug() << "3";
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
     sendSenderToReceiverFileNotify.get_string(tmpStr);
     socket->write(tmpStr, kPacketHeadLen + sendPacketHead.get_length());
-
+    qDebug() << "4";
     delete[] tmpStr;
-    
+
     /*发送完成*/
-    
+    qDebug() << "5";
     fclose(sendFile[sendFileKey].fd);
     sendFile.erase(sendFileKey);
+    qDebug() << "6";
 }
 
 //主动取消接收
@@ -1332,7 +1368,12 @@ void TcpClient::on_loginBtn_clicked()
         return;
     }
 
-    if(username.size() > 32 || password.size() > 32){
+    if(username == "群聊"){
+        errorGUI("用户名不能为群聊");
+        return;
+    }
+
+    if(username.size() > 31 || password.size() > 31){
         errorGUI("用户名或密码不能超过32字节");
         return;
     }
@@ -1624,10 +1665,29 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
 
  // 更新时间 （FINISHED）
 void TcpClient::timeUpdate(){
-    if(chatRoomWindow){
+    if(chatRoomWindow && isOnline){
         QLineEdit* line = static_cast<QLineEdit*>(chatRoomWindow->layout()->itemAt(0)->
                                                   layout()->itemAt(5)->layout()->itemAt(1)->widget());
         line->setText(QString::number(time.elapsed() / 1000));
+    }
+
+    QNetworkConfigurationManager mgr;
+    qDebug() << mgr.isOnline();
+    if(!mgr.isOnline()){
+        isOnline = false;
+        QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->layout()->children().at(5));
+        QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
+        line->setText("已离线");
+        errorGUI("wifi断开");
+    }else{
+        if(!isOnline){
+            isOnline = true;
+            QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->layout()->children().at(5));
+            QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
+            line->setText("我在线上");
+            errorGUI("wifi重新连接");
+
+        }
     }
 }
 
@@ -1920,8 +1980,13 @@ void TcpClient::on_fileDialogBtn_clicked(){
                  tr("Allfile(*.*)")
                 );
 
+    if(filename == ""){
+        return;
+    }
 //    qDebug() << filename;
     int index = filename.lastIndexOf('/');
     filename = filename.mid(index+1, -1);
+
+
     tryToSend(filename);
 }
