@@ -160,6 +160,7 @@ private slots:
     // Signal func to handle disconnection with Server
     void clientDisconnected();
 
+
     // login func
     // send a packet containing and wait
     // get_string write
@@ -250,7 +251,7 @@ private:
     QString recvName;
     QString fileName;
     int fileLen;
-    QNetworkConfigurationManager mgr;
+
     bool isOnline;
 };
 

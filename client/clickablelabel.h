@@ -3,6 +3,7 @@
 
 #include <QLabel>
 
+// 封装一个可点击的QLabel
 class ClickableLabel : public QLabel
 {
     Q_OBJECT

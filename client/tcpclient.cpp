@@ -30,6 +30,7 @@ TcpClient::TcpClient(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    socket = nullptr;
     loginWindow = nullptr;
     chatRoomWindow = nullptr;
     changePwdWindow = nullptr;
@@ -37,6 +38,7 @@ TcpClient::TcpClient(QWidget *parent) :
     preChatter = nullptr;
     pdlg = nullptr;
     fileWindow = nullptr;
+    configWindow = nullptr;
 
     curChatter = new QLabel;
 
@@ -57,16 +59,53 @@ TcpClient::TcpClient(QWidget *parent) :
     timer->start(1000); // 每次发射timeout信号时间间隔为1秒
     connect(timer,SIGNAL(timeout()),this,SLOT(timeUpdate()), Qt::QueuedConnection);
     time.start();
-
-
-
-
 }
 
 TcpClient::~TcpClient()
 {
     delete ui;
-    delete socket;
+
+    // 后续的指针，因不知道何时会退出而需要判断是否为空
+
+    if(socket){
+        delete socket;
+    }
+
+    if(preChatter){
+        delete preChatter;
+    }
+
+    if(curChatter){
+        delete curChatter;
+    }
+
+    if(rightStackLayout){
+        delete rightStackLayout;
+    }
+
+    if(loginWindow){
+        delete loginWindow;
+    }
+
+    if(chatRoomWindow){
+        delete chatRoomWindow;
+    }
+
+    if(changePwdWindow){
+        delete changePwdWindow;
+    }
+
+    if(configWindow){
+        delete configWindow;
+    }
+
+    if(fileWindow){
+        delete fileWindow;
+    }
+
+    if(userList){
+       delete userList;
+    }
 }
 
 
@@ -88,19 +127,12 @@ bool TcpClient::ConnectToHost(const QString& ip, unsigned short port){
     }
 
     qDebug() << "connect success";
-    connect(&mgr, &QNetworkConfigurationManager::onlineStateChanged,this, [=](bool isOnline){
-        qDebug()<<"网络已经更改"<<isOnline;
-    });
+
     return true;
 }
 
-bool TcpClient::isConnected(){
-    QHostInfo info = QHostInfo::fromName("www.baidu.com");
-      if(info.addresses().isEmpty())
-          return false;
-      else
-          return true;
-}
+
+
 
 // 显示登录界面 (FINISHED)
 void TcpClient::loginGUI(){
@@ -236,7 +268,7 @@ void TcpClient::successGUI(const QString& err){
     reply = QMessageBox::information(this, tr("成功"), err);
 }
 
-// 显示聊天室的新窗口，用于聊天(TODO)
+// 显示聊天室的新窗口，用于聊天(FINISHED)
 void TcpClient::chatRoomGUI(){
     chatRoomWindow = new QWidget;
     chatRoomWindow->setWindowTitle("ChatRoom");
@@ -284,7 +316,7 @@ void TcpClient::chatRoomGUI(){
     subsublayout3->addWidget(port);
 
     QHBoxLayout * subsublayout4 = new QHBoxLayout;
-    QLabel * loginTimeLabel = new QLabel("     登入时间");
+    QLabel * loginTimeLabel = new QLabel("     上次登入");
     QLineEdit * loginTime = new QLineEdit(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
     loginTime->setEnabled(false);
     loginTimeLabel->setStyleSheet("QLabel{color: white}");
@@ -350,6 +382,15 @@ void TcpClient::chatRoomGUI(){
     chatRoomWindow->show();
 }
 
+bool TcpClient::isConnected(){
+    QHostInfo info = QHostInfo::fromName("www.baidu.com");
+      if(info.addresses().isEmpty())
+          return false;
+      else
+          return true;
+}
+
+
 // *****辅助函数***** //
 
 std::string QStringToString(const QString & myQstring)
@@ -392,7 +433,7 @@ void TcpClient::askForReview(){
         return;
     }
 
-    ClientToServerTextAskForTexts sendClientToServerTextAskForTexts(sendPacketHead, 
+    ClientToServerTextAskForTexts sendClientToServerTextAskForTexts(sendPacketHead,
         atoi(configMap["reviewLineCnt"].c_str()), stringPadding(toUser, 32).c_str());
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
@@ -402,7 +443,7 @@ void TcpClient::askForReview(){
     delete[] tmpStr;
 }
 
-// 配置界面 （TODO）
+// 配置界面 （FINISHED）
 //下面有个确定键，点击后，会更改GUI界面，并触发槽函数sendConfig
 void TcpClient::configGUI(){
     configWindow = new QWidget;
@@ -460,6 +501,7 @@ void TcpClient::offline(){
         errorGUI("您被T了");
         exit(1);
     } else{
+        //如果当前我在传输文件，并且下线的人正好是我传输的那个人，那么终止传输
         if(recvFile.size()){
             if(senderName == name){
                 cancelRecvFileDataPassive();
@@ -478,7 +520,7 @@ void TcpClient::online(){
     setUserStatus(name, true);
 }
 
-// 清屏，清除对话框的内容 （TODO）
+// 清屏，清除对话框的内容 （FINISHED）
 void TcpClient::cls(){
     QWidget* cur = rightStackLayout->currentWidget();
     QTextBrowser* curTextBrowser = static_cast<QTextBrowser*>(cur->layout()->itemAt(1)->widget());
@@ -487,7 +529,7 @@ void TcpClient::cls(){
     askForReview();
 }
 
-// 显示文本 （TODO）
+// 显示文本 （FINISHED）
 void TcpClient::showText(){
     char* text = my_server_to_client_simple_text.get_simple_text_contain();
     char* from = my_server_to_client_simple_text.get_user_from_name();
@@ -612,7 +654,7 @@ int getFileLen(const char * fileName)
 
 //TODO
 void TcpClient::tryToSend(QString fileName)
-{   
+{
     /*
     点击发送文件的按钮触发的事件,首先需要获得接收方用户名recvName, 文件名fileName
     */
@@ -633,7 +675,7 @@ void TcpClient::tryToSend(QString fileName)
     int fileLen = getFileLen(fileNameString.c_str());
 
     qDebug() << "文件长度" << fileLen;
-    
+
     setEnableFileTransfer(false);
 
     /*
@@ -641,7 +683,7 @@ void TcpClient::tryToSend(QString fileName)
     否则向对端发送一个请求发送包
     */
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
-    
+
     if(sendFile.find(sendFileKey) == sendFile.end())
     {
         //Map中找不到，说明不是正在发送，可以发送，要显示发送的进度
@@ -713,7 +755,7 @@ void TcpClient::acceptRecv()
     fileWindow->close();
     /*
     点击文件接收按钮触发的事件,首先要获得发送方用户名senderName, 文件名称fileName,文件大小fileLen
-    */    
+    */
 
     /*
     open本地文件，打开方式为trunc
@@ -819,7 +861,7 @@ void TcpClient::writeDataAndRequest()
     std::string recvNameString = std::string(my_sender_to_receiver_file_data.get_receiver_name());
     std::string fileNameString = std::string(my_sender_to_receiver_file_data.get_file_name());
     unsigned int blockCnt = my_sender_to_receiver_file_data.get_block_num();
-    
+
     std::string recvFileKey = getKey(senderNameString, recvNameString, fileNameString);
 
     if(recvFile.find(recvFileKey) == recvFile.end())
@@ -854,7 +896,7 @@ void TcpClient::writeDataAndRequest()
     else
     {
 
-        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1, 
+        fwrite(my_sender_to_receiver_file_data.get_file_contain(), 1,
             myFileTrans.len - myFileTrans.blockCnt * FILEBUFFERSIZE, myFileTrans.fd);
 
         fclose(myFileTrans.fd);
@@ -964,10 +1006,10 @@ void TcpClient::cancelSendFileDataPassive()
     cancelFileTransferring(senderNameString, recvNameString, fileNameString, true);//GUI显示取消发送
 
     std::string sendFileKey = getKey(senderNameString, recvNameString, fileNameString);
-    
+
     if(sendFile.find(sendFileKey) == sendFile.end())
         return;
-    
+
     fclose(sendFile[sendFileKey].fd);
     sendFile.erase(sendFileKey);
 }
@@ -1054,7 +1096,7 @@ void TcpClient::sendConfig()
     delete[] tmpStr;
 }
 
-//根据初始发送配置包的内容进行设置配置 （TODO）
+//根据初始发送配置包的内容进行设置配置 （FINISHED）
 void TcpClient::setConfig(){
     std::string configData = std::string(my_server_to_client_user_set_update.get_user_set_data());
     printf(configData.c_str());
@@ -1116,7 +1158,7 @@ void TcpClient::insertListWidget(QString name, bool isOnline){
 }
 
 
-// 选择用户列表中所有用户（FINISHED)
+// 选择用户列表中所有用户（已废弃)
 void TcpClient::selectAll(){
     int count = userList->count();
     QListWidgetItem * item;
@@ -1130,7 +1172,7 @@ void TcpClient::selectAll(){
     }
 }
 
-// 不选用户列表所有用户（FINISHED)
+// 不选用户列表所有用户（已废弃)
 void TcpClient::selectNone(){
     int count = userList->count();
     QListWidgetItem * item;
@@ -1145,7 +1187,7 @@ void TcpClient::selectNone(){
 }
 
 
-// 得到用户列表的用户选中的状态（FINISHED）
+// 得到用户列表的用户选中的状态（已废弃）
 void TcpClient::getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& vecName){
     int count = userList->count();
     bool isChecked;
@@ -1167,7 +1209,7 @@ void TcpClient::getCheckState(QVector<bool>& vecIsChecked,  QVector<QString>& ve
     }
 }
 
-// 设置用户名的状态
+// 设置用户名的状态 (FINISHED)
 void TcpClient::setUserStatus(QString name, bool isOnline){
     int count = userList->count();
 
@@ -1211,7 +1253,7 @@ void TcpClient::setUserStatus(QString name, bool isOnline){
 
 
 
-// 更改密码成功GUI （TODO）
+// 更改密码成功GUI （FINISHED）
 void TcpClient::changePwdSuccessGUI(){
     errorGUI("修改密码成功");
 }
@@ -1239,7 +1281,15 @@ void TcpClient::reportSuccess(){
 
         qDebug() << "登录成功" << this->username;
         loginWindow->close();
+
+        //显示聊天室GUI
         chatRoomGUI();
+
+        // 显示上次登录时间
+        QString time = my_server_to_client_report_success.get_last_login_time();
+        QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->itemAt(0)->layout()->itemAt(4));
+        QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
+        line->setText(time);
 
         int num = my_server_to_client_report_success.get_user_num();
         qDebug() << "所有用户" << num;
@@ -1405,7 +1455,7 @@ void TcpClient::on_loginBtn_clicked()
     std::string usernameString = QStringToString(username);
     std::string passwordString = QStringToString(password);
 
-    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
+    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead,
         stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
@@ -1439,7 +1489,12 @@ void TcpClient::on_signupBtn_clicked()
         return;
     }
 
-    if(username.size() > 32 || password.size() > 32){
+    if(username == "群聊"){
+        errorGUI("用户名不能为群聊");
+        return;
+    }
+
+    if(username.size() > 31 || password.size() > 31){
         errorGUI("用户名或密码不能超过32字节");
         return;
     }
@@ -1457,7 +1512,7 @@ void TcpClient::on_signupBtn_clicked()
     std::string usernameString = QStringToString(username);
     std::string passwordString = QStringToString(password);
 
-    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead, 
+    ClientToServerReportLogin sendClientToServerReportLogin(sendPacketHead,
         stringPadding(usernameString, 32).c_str(), stringPadding(passwordString, 32).c_str());
 
     char* tmpStr = new char[kPacketHeadLen + sendPacketHead.get_length() + 1];
@@ -1468,7 +1523,7 @@ void TcpClient::on_signupBtn_clicked()
 }
 
 
-// 发送消息按钮 (TODO)
+// 发送消息按钮 (FINISHED)
 void TcpClient::on_sendBtn_clicked(){
     QWidget * cur = rightStackLayout->itemAt(curIndex)->widget();
     QTextEdit* curTextEdit = static_cast<QTextEdit*>(cur->layout()->itemAt(2)->widget()->children().at(0));
@@ -1678,7 +1733,7 @@ void TcpClient::on_showPwdCheckBox_stateChanged(){
     }
 }
 
- // 更新时间 （FINISHED）
+ // 时间中断，每秒一次，更新时间 （FINISHED）
 void TcpClient::timeUpdate(){
     if(chatRoomWindow){
         QLineEdit* line = static_cast<QLineEdit*>(chatRoomWindow->layout()->itemAt(0)->
@@ -1687,15 +1742,18 @@ void TcpClient::timeUpdate(){
     }
 
     if(!isConnected()){
-        if(isOnline){
-            errorGUI("您断网了");
-        }
         isOnline = false;
         // TODO 我离线了
+        QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->itemAt(0)->layout()->itemAt(6));
+        QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
+        line->setText("已离线");
     }else{
         if(!isOnline){
             isOnline = true;
-            errorGUI("您重新连上了网");
+            QHBoxLayout* layout = static_cast<QHBoxLayout*>(chatRoomMainLayout->itemAt(0)->layout()->itemAt(6));
+            QLineEdit* line = static_cast<QLineEdit*>(layout->itemAt(1)->widget());
+            line->setText("我在线上");
+            time.restart();
         }
     }
 
@@ -1931,7 +1989,7 @@ void TcpClient::readyRead(){
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
             */
-            
+
             case READ_SERVER_TO_CLIENT_USER_SET_UPDATE://收到设置用户信息，将相应信息放入报头，然后做相应的设置操作
                 my_server_to_client_user_set_update.set_string(my_packet_head, set_byte_array.constData());
                 setConfig();
@@ -1945,7 +2003,7 @@ void TcpClient::readyRead(){
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
-            
+
             case READ_C2C_FILE_NOTIFY_ACCEPT://sender收到同意请求包
                 my_sender_to_receiver_file_notify.set_string(my_packet_head, set_byte_array.constData());
                 sendFileData();//向recv发送数据包
@@ -1974,7 +2032,7 @@ void TcpClient::readyRead(){
                 current_read_state = READ_PACKET_HEAD;
                 current_byte_num_to_read = kPacketHeadLen;
                 break;
-            
+
             default:
                 qDebug() << "switch current_read_state case lost";
         }
